@@ -1,3 +1,5 @@
-module github.com/dogmatiq/protean
+module github.com/dogmatiq/harpy
 
-go 1.15
+go 1.17
+
+require google.golang.org/protobuf v1.27.1
