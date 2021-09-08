@@ -1,4 +1,4 @@
-package httptransport
+package harpy
 
 import (
 	"fmt"
@@ -25,8 +25,7 @@ var methodServerStreamingMediaTypes = []contenttype.MediaType{
 	contenttype.NewMediaType("text/eventstream"),
 }
 
-// Handler is an implementation of http.Handler that dispatches to protocol
-// buffers services.
+// Handler is an implementation of http.Handler that handles RPC calls.
 type Handler struct {
 	WebSocketUpgrader *websocket.Upgrader
 
