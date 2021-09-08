@@ -3,7 +3,7 @@ package harpy.test;
 
 option go_package = "github.com/dogmatiq/harpy/internal/testservice";
 
-service API {
+service TestService {
   rpc Unary(Request) returns (Response);
   rpc ServerStream(Request) returns (stream Response);
   rpc ClientStream(stream Request) returns (Response);

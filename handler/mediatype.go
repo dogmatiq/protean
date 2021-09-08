@@ -1,4 +1,4 @@
-package harpy
+package handler
 
 import (
 	"io"
@@ -29,7 +29,7 @@ func negotiateMediaType(
 	r *http.Request,
 	acceptable []contenttype.MediaType,
 ) (string, bool) {
-	mediaType, _, err := contenttype.GetAcceptableMediaType(r, serviceMediaTypes)
+	mediaType, _, err := contenttype.GetAcceptableMediaType(r, acceptable)
 	if err != nil {
 		notAcceptable(w, acceptable)
 		return "", false

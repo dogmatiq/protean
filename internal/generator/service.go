@@ -94,8 +94,13 @@ func generateServiceImpl(
 	out.Func().
 		Params(recv).
 		Id("LookupMethod").
-		Params(jen.Id("name").String()).
-		Params(jen.Qual(harpyPackage, "Method"), jen.Bool()).
+		Params(
+			jen.Id("name").String(),
+		).
+		Params(
+			jen.Qual(harpyPackage, "Method"),
+			jen.Bool(),
+		).
 		Block(
 			jen.Switch(jen.Id("name")).Block(cases...),
 		)

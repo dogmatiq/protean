@@ -1,4 +1,4 @@
-package harpy
+package handler
 
 import (
 	"fmt"
@@ -14,32 +14,23 @@ var serviceMediaTypes = []contenttype.MediaType{
 	contenttype.NewMediaType("application/json-rpc"),
 }
 
-var methodUnaryMediaTypes = []contenttype.MediaType{
-	contenttype.NewMediaType("text/plain"),
-	contenttype.NewMediaType("application/vnd.google.protobuf"),
-	contenttype.NewMediaType("application/x-protobuf"),
-	contenttype.NewMediaType("application/json"),
-}
-
 var methodServerStreamingMediaTypes = []contenttype.MediaType{
 	contenttype.NewMediaType("text/eventstream"),
 }
 
 // Handler is an implementation of http.Handler that handles RPC calls.
 type Handler struct {
-	WebSocketUpgrader *websocket.Upgrader
-
 	services map[string]codegenapi.Service
 }
 
-// RegisterHandler registers a generated handler with the HTTP handler.
-func (h *Handler) RegisterHandler(s codegenapi.Service) {
+// RegisterService registers a generated service with the HTTP handler.
+func (h *Handler) RegisterService(s codegenapi.Service) {
 	if h.services == nil {
 		h.services = map[string]codegenapi.Service{}
 	}
 
 	key := fmt.Sprintf(
-		"%s/%s",
+		"%s.%s",
 		s.Package(),
 		s.Name(),
 	)
@@ -49,7 +40,18 @@ func (h *Handler) RegisterHandler(s codegenapi.Service) {
 
 // ServeHTTP handles a HTTP request.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	serviceName, methodName := parsePath(r.URL.Path)
+	path := strings.TrimPrefix(r.URL.Path, "/")
+	if len(path) == 0 {
+		// TODO: list services
+		http.Error(
+			w,
+			http.StatusText(http.StatusNotFound),
+			http.StatusNotFound,
+		)
+		return
+	}
+
+	serviceName, methodName := parsePath(path)
 
 	service, ok := h.services[serviceName]
 	if !ok {
@@ -100,7 +102,10 @@ func (h *Handler) handleServiceRequest(
 
 	switch mediaType {
 	case "text/eventstream":
-		h.handleJSONRPC(w, r, service)
+		next := &jsonRPCHandler{
+			Service: service,
+		}
+		next.ServeHTTP(w, r)
 	default:
 		panic(fmt.Sprintf("missing switch case: %s", mediaType))
 	}
@@ -115,7 +120,11 @@ func (h *Handler) handleMethodRequest(
 	method codegenapi.Method,
 ) {
 	if websocket.IsWebSocketUpgrade(r) {
-		h.handleWebSocket(w, r, service, method)
+		next := &webSocketHandler{
+			Service: service,
+			Method:  method,
+		}
+		next.ServeHTTP(w, r)
 		return
 	}
 
@@ -144,13 +153,19 @@ func (h *Handler) handleMethodRequest(
 		return
 	}
 
-	h.handleUnary(w, r, service, method)
+	next := &unaryHandler{
+		Service: service,
+		Method:  method,
+	}
+	next.ServeHTTP(w, r)
 }
 
 // parsePath parses an HTTP request path to determine the name of the service,
 // and optionally the method, being requested.
 func parsePath(path string) (service, method string) {
-	if i := strings.IndexByte(path, '/'); i != -1 {
+	path = strings.TrimPrefix(path, "/")
+
+	if i := strings.LastIndexByte(path, '/'); i != -1 {
 		return path[:i], path[i+1:]
 	}
 

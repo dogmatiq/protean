@@ -82,7 +82,7 @@ func generateUnaryCallImpl(
 				).Block(
 					jen.Return(
 						jen.Id("c").Dot("res"),
-						jen.Id("c").Dot("err").Op("!=").Nil(),
+						jen.Id("c").Dot("err").Op("==").Nil(),
 						jen.Id("c").Dot("err"),
 					),
 				),
@@ -116,6 +116,8 @@ func generateUnaryCallImpl(
 					jen.Id("c").Dot("ctx"),
 					jen.Id("req"),
 				),
+			jen.Close(jen.Id("c").Dot("done")),
+			jen.Line(),
 			jen.Return(
 				jen.Nil(),
 			),
