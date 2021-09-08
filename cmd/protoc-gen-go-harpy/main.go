@@ -11,8 +11,12 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
+var version string // populated automatically
+
 func main() {
-	gen := &generator.Generator{}
+	gen := &generator.Generator{
+		Version: version,
+	}
 
 	if err := generate(gen, os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, err)
