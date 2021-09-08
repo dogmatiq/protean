@@ -1,0 +1,15 @@
+syntax = "proto3";
+package harpy.example;
+
+option go_package = "github.com/dogmatiq/harpy/example";
+
+service ExampleAPI {
+  rpc Unary(Request) returns (Response);
+  rpc ServerStream(Request) returns (stream Response);
+  rpc ClientStream(stream Request) returns (Response);
+  rpc BidirectionalStream(stream Request) returns (stream Response);
+}
+
+message Request {}
+message Response {}
+  
