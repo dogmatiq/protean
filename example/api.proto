@@ -12,4 +12,3 @@ service ExampleAPI {
 
 message Request {}
 message Response {}
-  

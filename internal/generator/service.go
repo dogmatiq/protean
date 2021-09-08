@@ -1,31 +1,30 @@
 package generator
 
 import (
-	"fmt"
-
 	"github.com/dave/jennifer/jen"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateService generates code for a single service definition.
-func (g *Generator) generateServerInterface(
+// generateServiceInterface generates a Go interface for a protocol buffers
+// service.
+func generateServiceInterface(
 	out *jen.File,
 	req *pluginpb.CodeGeneratorRequest,
 	f *descriptorpb.FileDescriptorProto,
 	s *descriptorpb.ServiceDescriptorProto,
 ) error {
-	ident := fmt.Sprintf("Harpy%sServer", s.GetName())
+	typeName := s.GetName()
 
 	var methods []jen.Code
 
 	for _, m := range s.GetMethod() {
-		inputs, err := serverInputs(req, f, m)
+		inputs, err := methodInputs(req, f, m)
 		if err != nil {
 			return err
 		}
 
-		outputs, err := serverOutputs(req, f, m)
+		outputs, err := methodOutputs(req, f, m)
 		if err != nil {
 			return err
 		}
@@ -39,18 +38,19 @@ func (g *Generator) generateServerInterface(
 	}
 
 	out.Commentf(
-		"%s is an interface for types that implement the %s service.",
-		ident,
+		"%s is an interface the %s.%s service.",
+		typeName,
+		f.GetPackage(),
 		s.GetName(),
 	)
-	out.Type().Id(ident).Interface(methods...)
+	out.Type().Id(typeName).Interface(methods...)
 
 	return nil
 }
 
-// serverInputs returns the input parameters for a method of a generated server
+// methodInputs returns the input parameters for a method of a generated server
 // interface.
-func serverInputs(
+func methodInputs(
 	req *pluginpb.CodeGeneratorRequest,
 	f *descriptorpb.FileDescriptorProto,
 	m *descriptorpb.MethodDescriptorProto,
@@ -101,9 +101,9 @@ func serverInputs(
 	return params, nil
 }
 
-// serverOutpus returns the output parameters for a method of a generated server
-// interface.
-func serverOutputs(
+// methodOutputs returns the output parameters for a method of a generated
+// server interface.
+func methodOutputs(
 	req *pluginpb.CodeGeneratorRequest,
 	f *descriptorpb.FileDescriptorProto,
 	m *descriptorpb.MethodDescriptorProto,
