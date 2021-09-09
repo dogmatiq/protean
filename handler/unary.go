@@ -44,11 +44,11 @@ func (h *unaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(fmt.Sprintf("missing switch case: %s", mediaType))
 	}
 
-	var m runtime.RawMessage
+	var u runtime.Unmarshaler
 
 	switch r.Method {
 	case http.MethodGet:
-		m = func(proto.Message) error {
+		u = func(proto.Message) error {
 			// TODO: parse query parameters
 			return nil
 		}
@@ -66,7 +66,7 @@ func (h *unaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	call := h.Method.NewCall(r.Context())
 
-	err := call.Send(m)
+	err := call.Send(u)
 	call.Done()
 
 	if err != nil {

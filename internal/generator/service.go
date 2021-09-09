@@ -32,13 +32,13 @@ func generateServiceImpl(
 	out.Func().
 		Id(funcName).
 		Params(
-			jen.Id("server").Qual(runtimePackage, "Server"),
-			jen.Id("service").Id(ifaceName),
+			jen.Id("r").Qual(runtimePackage, "Registry"),
+			jen.Id("s").Id(ifaceName),
 		).
 		Block(
-			jen.Id("server").Dot("RegisterService").Call(
+			jen.Id("r").Dot("RegisterService").Call(
 				jen.Op("&").Id(implName).Values(
-					jen.Id("service"),
+					jen.Id("s"),
 				),
 			),
 		)

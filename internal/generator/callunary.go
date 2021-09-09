@@ -94,7 +94,7 @@ func generateUnaryCallImpl(
 		Params(recv).
 		Id("Send").
 		Params(
-			jen.Id("unmarshal").Qual(runtimePackage, "RawMessage"),
+			jen.Id("unmarshal").Qual(runtimePackage, "Unmarshaler"),
 		).
 		Params(
 			jen.Error(),
