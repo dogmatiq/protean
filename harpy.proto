@@ -1,0 +1,10 @@
+syntax = "proto3";
+package harpy;
+
+option go_package = "github.com/dogmatiq/harpy";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.MethodOptions {
+    string http_route = 58080;
+}

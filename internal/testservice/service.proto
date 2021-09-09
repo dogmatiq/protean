@@ -3,11 +3,33 @@ package harpy.test;
 
 option go_package = "github.com/dogmatiq/harpy/internal/testservice";
 
+import "github.com/dogmatiq/harpy/harpy.proto";
+
+// TestService is a service used to test transport implementations.
 service TestService {
-  rpc Unary(Request) returns (Response);
-  rpc ServerStream(Request) returns (stream Response);
-  rpc ClientStream(stream Request) returns (Response);
-  rpc BidirectionalStream(stream Request) returns (stream Response);
+  // Unary is an RPC method that accepts a single request and returns a single
+  // response.
+  rpc Unary(Request) returns (Response) {
+    option (harpy.http_route) = "/unary/:id";
+  }
+
+  // ClientStream is an RPC method that accepts a stream of requests and returns
+  // a single response.
+  rpc ClientStream(stream Request) returns (Response) {
+    option (harpy.http_route) = "/client-stream/:id";
+  }
+
+  // ServerStream is an RPC method accepts a single request and sends a stream
+  // of responses.
+  rpc ServerStream(Request) returns (stream Response) {
+    option (harpy.http_route) = "/server-stream/:id";
+  }
+  
+  // BidirectionalStream is an RPC method that accepts a stream of requests and
+  // sends a stream of responses.
+  rpc BidirectionalStream(stream Request) returns (stream Response) {
+    option (harpy.http_route) = "/bidirectional-stream/:id";
+  }
 }
 
 message Request {

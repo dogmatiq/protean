@@ -44,12 +44,21 @@ var _ = Describe("type unaryHandler (via Handler)", func() {
 					nil,
 				).WithContext(ctx)
 
+				service.UnaryFunc = func(
+					c context.Context,
+					r *testservice.Request,
+				) (*testservice.Response, error) {
+					return &testservice.Response{
+						Id:   "<id>",
+						Data: "<data>",
+					}, nil
+				}
+
 				handler.ServeHTTP(response, request)
 
-				Expect(response.Code).To(
-					Equal(http.StatusOK),
-					response.Body.String(),
-				)
+				Expect(response.Header().Get("Content-Type")).To(Equal("text/plain; proto=harpy.test.Response"))
+				Expect(response.Body.String()).To(Equal("xxx"))
+				Expect(response.Code).To(Equal(http.StatusOK))
 			})
 		})
 	})
