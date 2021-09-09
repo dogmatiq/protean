@@ -1,4 +1,4 @@
-package codegenapi
+package runtime
 
 import (
 	"context"

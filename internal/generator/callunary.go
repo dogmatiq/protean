@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateUnaryCallImpl generates an implementation of codegenapi.Call for a
+// generateUnaryCallImpl generates an implementation of runtime.Call for a
 // unary protocol buffers method.
 func generateUnaryCallImpl(
 	out *jen.File,

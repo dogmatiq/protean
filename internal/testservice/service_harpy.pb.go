@@ -9,7 +9,7 @@ package testservice
 import (
 	"context"
 	"errors"
-	harpy "github.com/dogmatiq/harpy/codegenapi"
+	harpy "github.com/dogmatiq/harpy/runtime"
 	proto "google.golang.org/protobuf/proto"
 )
 

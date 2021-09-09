@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/dogmatiq/harpy/codegenapi"
+	"github.com/dogmatiq/harpy/runtime"
 )
 
 // handleSSE handles requests that consume server-streaming RPC calls using
@@ -14,8 +14,8 @@ import (
 func (h *Handler) handleSSE(
 	w http.ResponseWriter,
 	r *http.Request,
-	s codegenapi.Service,
-	m codegenapi.Method,
+	s runtime.Service,
+	m runtime.Method,
 ) {
 	// ensure get, parse query
 	http.Error(w, "not implemented", http.StatusNotImplemented)

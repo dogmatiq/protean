@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dogmatiq/harpy/codegenapi"
+	"github.com/dogmatiq/harpy/runtime"
 	"github.com/elnormous/contenttype"
 	"github.com/gorilla/websocket"
 )
@@ -20,13 +20,13 @@ var methodServerStreamingMediaTypes = []contenttype.MediaType{
 
 // Handler is an implementation of http.Handler that handles RPC calls.
 type Handler struct {
-	services map[string]codegenapi.Service
+	services map[string]runtime.Service
 }
 
 // RegisterService registers a generated service with the HTTP handler.
-func (h *Handler) RegisterService(s codegenapi.Service) {
+func (h *Handler) RegisterService(s runtime.Service) {
 	if h.services == nil {
-		h.services = map[string]codegenapi.Service{}
+		h.services = map[string]runtime.Service{}
 	}
 
 	key := fmt.Sprintf(
@@ -93,7 +93,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleServiceRequest(
 	w http.ResponseWriter,
 	r *http.Request,
-	service codegenapi.Service,
+	service runtime.Service,
 ) {
 	mediaType, ok := negotiateMediaType(w, r, serviceMediaTypes)
 	if !ok {
@@ -116,8 +116,8 @@ func (h *Handler) handleServiceRequest(
 func (h *Handler) handleMethodRequest(
 	w http.ResponseWriter,
 	r *http.Request,
-	service codegenapi.Service,
-	method codegenapi.Method,
+	service runtime.Service,
+	method runtime.Method,
 ) {
 	if websocket.IsWebSocketUpgrade(r) {
 		next := &webSocketHandler{

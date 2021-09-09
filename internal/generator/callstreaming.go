@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateStreamingCallImpl generates an implementation of codegenapi.Call for
+// generateStreamingCallImpl generates an implementation of runtime.Call for
 // a protocol buffers method that uses any kind of streaming.
 func generateStreamingCallImpl(
 	out *jen.File,

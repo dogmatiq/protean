@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateMethodImpl generates an implementation of codegenapi.Method for a
+// generateMethodImpl generates an implementation of runtime.Method for a
 // protocol buffers method.
 func generateMethodImpl(
 	out *jen.File,
@@ -71,7 +71,7 @@ func generateMethodImpl(
 }
 
 // methodImplName returns the name to use for the type that implements
-// codegenapi.Method for the given method.
+// runtime.Method for the given method.
 func methodImplName(
 	s *descriptorpb.ServiceDescriptorProto,
 	m *descriptorpb.MethodDescriptorProto,
@@ -84,7 +84,7 @@ func methodImplName(
 }
 
 // callImplName returns the name to use for the type that implements
-// codegenapi.Call for the given method.
+// runtime.Call for the given method.
 func callImplName(
 	s *descriptorpb.ServiceDescriptorProto,
 	m *descriptorpb.MethodDescriptorProto,
@@ -97,7 +97,7 @@ func callImplName(
 }
 
 // newCallFuncName returns the name to use for the function that returns a new
-// codegenapi.Call for the given method.
+// runtime.Call for the given method.
 func newCallFuncName(
 	s *descriptorpb.ServiceDescriptorProto,
 	m *descriptorpb.MethodDescriptorProto,

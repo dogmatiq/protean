@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dogmatiq/harpy/codegenapi"
+	"github.com/dogmatiq/harpy/runtime"
 	"github.com/elnormous/contenttype"
 	"google.golang.org/protobuf/proto"
 )
@@ -21,8 +21,8 @@ var unaryMediaTypes = []contenttype.MediaType{
 // unaryHandler is an implementation of http.Handler that handles "unary"
 // (non-streaming) requests for a specific RPC method.
 type unaryHandler struct {
-	Service codegenapi.Service
-	Method  codegenapi.Method
+	Service runtime.Service
+	Method  runtime.Method
 }
 
 func (h *unaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +44,7 @@ func (h *unaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(fmt.Sprintf("missing switch case: %s", mediaType))
 	}
 
-	var m codegenapi.RawMessage
+	var m runtime.RawMessage
 
 	switch r.Method {
 	case http.MethodGet:

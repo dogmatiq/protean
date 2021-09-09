@@ -8,9 +8,9 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-const harpyPackage = "github.com/dogmatiq/harpy/codegenapi"
+const harpyPackage = "github.com/dogmatiq/harpy/runtime"
 
-// generateServiceImpl generates an implementation of codegenapi.Service for a
+// generateServiceImpl generates an implementation of runtime.Service for a
 // protocol buffers service.
 func generateServiceImpl(
 	out *jen.File,
@@ -132,7 +132,7 @@ func generateServiceImpl(
 }
 
 // serviceImplName returns the name to use for the type that implements
-// codegenapi.Method for the given method.
+// runtime.Method for the given method.
 func serviceImplName(
 	s *descriptorpb.ServiceDescriptorProto,
 ) string {

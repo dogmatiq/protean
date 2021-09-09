@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/dogmatiq/harpy/codegenapi"
+	"github.com/dogmatiq/harpy/runtime"
 )
 
 // webSocketHandler is an implementation of http.Handler that handles
@@ -18,8 +18,8 @@ import (
 // If the RPC call is unary (no streaming involved), the connection is closed
 // after the response is sent.
 type webSocketHandler struct {
-	Service codegenapi.Service
-	Method  codegenapi.Method
+	Service runtime.Service
+	Method  runtime.Method
 }
 
 func (h *webSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
