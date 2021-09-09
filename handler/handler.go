@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dogmatiq/harpy/runtime"
+	"github.com/dogmatiq/protean/runtime"
 	"github.com/elnormous/contenttype"
 	"github.com/gorilla/websocket"
 )

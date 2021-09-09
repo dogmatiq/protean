@@ -1,7 +1,7 @@
 syntax = "proto3";
-package harpy;
+package protean;
 
-option go_package = "github.com/dogmatiq/harpy";
+option go_package = "github.com/dogmatiq/protean/proto";
 
 import "google/protobuf/descriptor.proto";
 

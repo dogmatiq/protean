@@ -21,7 +21,7 @@ func generateUnaryCallImpl(
 	inputPkg, inputType, _ := goType(req, m.GetInputType())
 	outputPkg, outputType, _ := goType(req, m.GetOutputType())
 
-	out.Commentf("%s is an implementation of the harpy.Call", implName)
+	out.Commentf("%s is an implementation of the runtime.Call", implName)
 	out.Commentf("interface for the %s.%s() method.", s.GetName(), m.GetName())
 	out.Type().Id(implName).Struct(
 		jen.Id("ctx").Qual("context", "Context"),
@@ -32,7 +32,7 @@ func generateUnaryCallImpl(
 	)
 
 	funcName := newCallFuncName(s, m)
-	out.Commentf("%s returns a new harpy.Call for the %s.%s() method.", funcName, ifaceName, m.GetName())
+	out.Commentf("%s returns a new runtime.Call for the %s.%s() method.", funcName, ifaceName, m.GetName())
 	out.Func().
 		Id(funcName).
 		Params(
@@ -40,7 +40,7 @@ func generateUnaryCallImpl(
 			jen.Id("service").Id(ifaceName),
 		).
 		Params(
-			jen.Qual(harpyPackage, "Call"),
+			jen.Qual(runtimePackage, "Call"),
 		).
 		Block(
 			jen.Return(
@@ -94,7 +94,7 @@ func generateUnaryCallImpl(
 		Params(recv).
 		Id("Send").
 		Params(
-			jen.Id("unmarshal").Qual(harpyPackage, "RawMessage"),
+			jen.Id("unmarshal").Qual(runtimePackage, "RawMessage"),
 		).
 		Params(
 			jen.Error(),

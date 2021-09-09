@@ -20,7 +20,7 @@ func generateMethodImpl(
 	ifaceName := interfaceName(s)
 	implName := methodImplName(s, m)
 
-	out.Commentf("%s is an implementation of the harpy.Method", implName)
+	out.Commentf("%s is an implementation of the runtime.Method", implName)
 	out.Commentf("interface for the %s.%s() method.", s.GetName(), m.GetName())
 	out.Type().Id(implName).Struct(
 		jen.Id("service").Id(ifaceName),
@@ -60,7 +60,7 @@ func generateMethodImpl(
 			jen.Id("ctx").Qual("context", "Context"),
 		).
 		Params(
-			jen.Qual(harpyPackage, "Call"),
+			jen.Qual(runtimePackage, "Call"),
 		).
 		Block(jen.Return(
 			jen.Id(newCallFuncName(s, m)).Call(
@@ -77,7 +77,7 @@ func methodImplName(
 	m *descriptorpb.MethodDescriptorProto,
 ) string {
 	return fmt.Sprintf(
-		"harpy_%s_%s_Method",
+		"protean_%s_%s_Method",
 		s.GetName(),
 		m.GetName(),
 	)
@@ -90,7 +90,7 @@ func callImplName(
 	m *descriptorpb.MethodDescriptorProto,
 ) string {
 	return fmt.Sprintf(
-		"harpy_%s_%s_Call",
+		"protean_%s_%s_Call",
 		s.GetName(),
 		m.GetName(),
 	)
@@ -103,7 +103,7 @@ func newCallFuncName(
 	m *descriptorpb.MethodDescriptorProto,
 ) string {
 	return fmt.Sprintf(
-		"newHarpy_%s_%s_Call",
+		"newprotean_%s_%s_Call",
 		s.GetName(),
 		m.GetName(),
 	)

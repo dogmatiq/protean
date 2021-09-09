@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dogmatiq/harpy/runtime"
+	"github.com/dogmatiq/protean/runtime"
 	"github.com/elnormous/contenttype"
 	"google.golang.org/protobuf/proto"
 )

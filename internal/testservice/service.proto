@@ -1,34 +1,34 @@
 syntax = "proto3";
-package harpy.test;
+package protean.test;
 
-option go_package = "github.com/dogmatiq/harpy/internal/testservice";
+option go_package = "github.com/dogmatiq/protean/internal/testservice";
 
-import "github.com/dogmatiq/harpy/harpy.proto";
+import "github.com/dogmatiq/protean/proto/options.proto";
 
 // TestService is a service used to test transport implementations.
 service TestService {
   // Unary is an RPC method that accepts a single request and returns a single
   // response.
   rpc Unary(Request) returns (Response) {
-    option (harpy.http_route) = "/unary/:id";
+    option (protean.http_route) = "/unary/:id";
   }
 
   // ClientStream is an RPC method that accepts a stream of requests and returns
   // a single response.
   rpc ClientStream(stream Request) returns (Response) {
-    option (harpy.http_route) = "/client-stream/:id";
+    option (protean.http_route) = "/client-stream/:id";
   }
 
   // ServerStream is an RPC method accepts a single request and sends a stream
   // of responses.
   rpc ServerStream(Request) returns (stream Response) {
-    option (harpy.http_route) = "/server-stream/:id";
+    option (protean.http_route) = "/server-stream/:id";
   }
   
   // BidirectionalStream is an RPC method that accepts a stream of requests and
   // sends a stream of responses.
   rpc BidirectionalStream(stream Request) returns (stream Response) {
-    option (harpy.http_route) = "/bidirectional-stream/:id";
+    option (protean.http_route) = "/bidirectional-stream/:id";
   }
 }
 

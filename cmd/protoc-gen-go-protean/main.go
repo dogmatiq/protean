@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/dogmatiq/harpy/internal/generator"
+	"github.com/dogmatiq/protean/internal/generator"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )

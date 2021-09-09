@@ -6,7 +6,7 @@ import (
 )
 
 // parameters encapsulates the options passed to the generator via the
-// --harpy_opt flag.
+// --protean_opt flag.
 //
 // The are referred to as "options" on the protoc command line, but "parameters"
 // within the Protocol Buffers plugin system.

@@ -1,4 +1,4 @@
-module github.com/dogmatiq/harpy
+module github.com/dogmatiq/protean
 
 go 1.17
 

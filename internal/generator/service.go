@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-const harpyPackage = "github.com/dogmatiq/harpy/runtime"
+const runtimePackage = "github.com/dogmatiq/protean/runtime"
 
 // generateServiceImpl generates an implementation of runtime.Service for a
 // protocol buffers service.
@@ -18,23 +18,21 @@ func generateServiceImpl(
 	f *descriptorpb.FileDescriptorProto,
 	s *descriptorpb.ServiceDescriptorProto,
 ) {
-	out.ImportAlias(harpyPackage, "harpy")
-
 	ifaceName := interfaceName(s)
 	implName := serviceImplName(s)
 
-	out.Commentf("%s is an implementation of the harpy.Service", implName)
+	out.Commentf("%s is an implementation of the runtime.Service", implName)
 	out.Commentf("interface for the %s service.", s.GetName())
 	out.Type().Id(implName).Struct(
 		jen.Id("service").Id(ifaceName),
 	)
 
-	funcName := fmt.Sprintf("RegisterHarpy%sServer", s.GetName())
-	out.Commentf("%s registers a %s service with a Harpy server.", funcName, ifaceName)
+	funcName := fmt.Sprintf("RegisterProtean%sServer", s.GetName())
+	out.Commentf("%s registers a %s service with a Protean server.", funcName, ifaceName)
 	out.Func().
 		Id(funcName).
 		Params(
-			jen.Id("server").Qual(harpyPackage, "Server"),
+			jen.Id("server").Qual(runtimePackage, "Server"),
 			jen.Id("service").Id(ifaceName),
 		).
 		Block(
@@ -98,7 +96,7 @@ func generateServiceImpl(
 			jen.Id("name").String(),
 		).
 		Params(
-			jen.Qual(harpyPackage, "Method"),
+			jen.Qual(runtimePackage, "Method"),
 			jen.Bool(),
 		).
 		Block(
@@ -136,5 +134,5 @@ func generateServiceImpl(
 func serviceImplName(
 	s *descriptorpb.ServiceDescriptorProto,
 ) string {
-	return fmt.Sprintf("harpy_%s_Service", s.GetName())
+	return fmt.Sprintf("protean_%s_Service", s.GetName())
 }

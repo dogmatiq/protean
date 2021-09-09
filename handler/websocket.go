@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/dogmatiq/harpy/runtime"
+	"github.com/dogmatiq/protean/runtime"
 )
 
 // webSocketHandler is an implementation of http.Handler that handles
