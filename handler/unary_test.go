@@ -28,7 +28,7 @@ var _ = Describe("type unaryHandler (via Handler)", func() {
 		service = &testservice.Stub{}
 		response = httptest.NewRecorder()
 
-		testservice.RegisterProteanTestServiceServer(handler, service)
+		testservice.ProteanRegisterTestServiceServer(handler, service)
 	})
 
 	AfterEach(func() {
@@ -45,10 +45,10 @@ var _ = Describe("type unaryHandler (via Handler)", func() {
 				).WithContext(ctx)
 
 				service.UnaryFunc = func(
-					c context.Context,
-					r *testservice.Request,
-				) (*testservice.Response, error) {
-					return &testservice.Response{
+					context.Context,
+					*testservice.Input,
+				) (*testservice.Output, error) {
+					return &testservice.Output{
 						Id:   "<id>",
 						Data: "<data>",
 					}, nil

@@ -128,7 +128,7 @@ func (h *Handler) handleMethodRequest(
 		return
 	}
 
-	if method.ClientStreaming() {
+	if method.InputIsStream() {
 		http.Error(
 			w,
 			"This RPC method uses streaming requests, which requires a websocket connection.",
@@ -137,7 +137,7 @@ func (h *Handler) handleMethodRequest(
 		return
 	}
 
-	if method.ServerStreaming() {
+	if method.OutputIsStream() {
 		mediaType, ok := negotiateMediaType(w, r, methodServerStreamingMediaTypes)
 		if !ok {
 			return

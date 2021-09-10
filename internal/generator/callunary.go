@@ -59,39 +59,6 @@ func generateUnaryCallImpl(
 	out.Line()
 	out.Func().
 		Params(recv).
-		Id("Recv").
-		Params().
-		Params(
-			jen.Qual("google.golang.org/protobuf/proto", "Message"),
-			jen.Bool(),
-			jen.Error(),
-		).
-		Block(
-			jen.Select().Block(
-				jen.Case(
-					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
-				).Block(
-					jen.Return(
-						jen.Nil(),
-						jen.False(),
-						jen.Id("c").Dot("ctx").Dot("Err").Call(),
-					),
-				),
-				jen.Case(
-					jen.Op("<-").Id("c").Dot("done"),
-				).Block(
-					jen.Return(
-						jen.Id("c").Dot("res"),
-						jen.Id("c").Dot("err").Op("==").Nil(),
-						jen.Id("c").Dot("err"),
-					),
-				),
-			),
-		)
-
-	out.Line()
-	out.Func().
-		Params(recv).
 		Id("Send").
 		Params(
 			jen.Id("unmarshal").Qual(runtimePackage, "Unmarshaler"),
@@ -129,4 +96,37 @@ func generateUnaryCallImpl(
 		Id("Done").
 		Params().
 		Block()
+
+	out.Line()
+	out.Func().
+		Params(recv).
+		Id("Recv").
+		Params().
+		Params(
+			jen.Qual("google.golang.org/protobuf/proto", "Message"),
+			jen.Bool(),
+			jen.Error(),
+		).
+		Block(
+			jen.Select().Block(
+				jen.Case(
+					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
+				).Block(
+					jen.Return(
+						jen.Nil(),
+						jen.False(),
+						jen.Id("c").Dot("ctx").Dot("Err").Call(),
+					),
+				),
+				jen.Case(
+					jen.Op("<-").Id("c").Dot("done"),
+				).Block(
+					jen.Return(
+						jen.Id("c").Dot("res"),
+						jen.Id("c").Dot("err").Op("==").Nil(),
+						jen.Id("c").Dot("err"),
+					),
+				),
+			),
+		)
 }

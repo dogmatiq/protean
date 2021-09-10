@@ -7,37 +7,41 @@ import "github.com/dogmatiq/protean/proto/options.proto";
 
 // TestService is a service used to test transport implementations.
 service TestService {
-  // Unary is an RPC method that accepts a single request and returns a single
-  // response.
-  rpc Unary(Request) returns (Response) {
-    option (protean.http_route) = "/unary/:id";
+  // Unary is an RPC method that accepts a single input message and responds
+  // with a single output message.
+  rpc Unary(Input) returns (Output) {
+    option (protean.method).http_route = "/unary/:id";
   }
 
-  // ClientStream is an RPC method that accepts a stream of requests and returns
-  // a single response.
-  rpc ClientStream(stream Request) returns (Response) {
-    option (protean.http_route) = "/client-stream/:id";
+  // ClientStream is an RPC method that accepts a stream of input messages and
+  // responds with a single output message.
+  rpc ClientStream(stream Input) returns (Output) {
+    option (protean.method).http_route = "/client-stream/:id";
   }
 
-  // ServerStream is an RPC method accepts a single request and sends a stream
-  // of responses.
-  rpc ServerStream(Request) returns (stream Response) {
-    option (protean.http_route) = "/server-stream/:id";
+  // ServerStream is an RPC method accepts a single input message and responds
+  // with a stream of output messages.
+  rpc ServerStream(Input) returns (stream Output) {
+    option (protean.method).http_route = "/server-stream/:id";
   }
   
-  // BidirectionalStream is an RPC method that accepts a stream of requests and
-  // sends a stream of responses.
-  rpc BidirectionalStream(stream Request) returns (stream Response) {
-    option (protean.http_route) = "/bidirectional-stream/:id";
+  // BidirectionalStream is an RPC method that accepts a stream of input
+  // messages and responds with a stream of output messages.
+  rpc BidirectionalStream(stream Input) returns (stream Output) {
+    option (protean.method).http_route = "/bidirectional-stream/:id";
   }
-}
+} 
 
-message Request {
-  string id = 1;
+// Input is the message used as inputs to all of the RPC methods in the test
+// service.
+message Input {
+  string id = 1 [(protean.field).sse_id = true];
   string data = 2;
 }
 
-message Response {
-  string id = 1;
+// Output is the message used as outputs from all of the RPC methods in the test
+// service.
+message Output {
+  string id = 1 [(protean.field).sse_id = true];
   string data = 2;
 }

@@ -27,7 +27,7 @@ func generateServiceImpl(
 		jen.Id("service").Id(ifaceName),
 	)
 
-	funcName := fmt.Sprintf("RegisterProtean%sServer", s.GetName())
+	funcName := fmt.Sprintf("ProteanRegister%sServer", s.GetName())
 	out.Commentf("%s registers a %s service with a Protean server.", funcName, ifaceName)
 	out.Func().
 		Id(funcName).

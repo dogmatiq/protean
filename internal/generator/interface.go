@@ -61,7 +61,7 @@ func methodInputs(
 		jen.Qual("context", "Context"),
 	}
 
-	// Add the request parameter.
+	// Add the input message parameter.
 	{
 		pkgPath, typeName, err := goType(
 			req,
@@ -84,7 +84,7 @@ func methodInputs(
 		}
 	}
 
-	// Add the response parameter for streaming responses.
+	// Add the output message parameter for streaming responses.
 	if m.GetServerStreaming() {
 		pkgPath, typeName, err := goType(
 			req,
@@ -138,5 +138,5 @@ func methodOutputs(
 // interfaceName returns the name to use for the service interface for
 // the given service.
 func interfaceName(s *descriptorpb.ServiceDescriptorProto) string {
-	return s.GetName()
+	return "Protean" + s.GetName()
 }

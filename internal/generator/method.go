@@ -39,7 +39,7 @@ func generateMethodImpl(
 	out.Line()
 	out.Func().
 		Params(recv).
-		Id("ClientStreaming").
+		Id("InputIsStream").
 		Params().
 		Params(jen.Bool()).
 		Block(jen.Return(jen.Lit(m.GetClientStreaming())))
@@ -47,7 +47,7 @@ func generateMethodImpl(
 	out.Line()
 	out.Func().
 		Params(recv).
-		Id("ServerStreaming").
+		Id("OutputIsStream").
 		Params().
 		Params(jen.Bool()).
 		Block(jen.Return(jen.Lit(m.GetServerStreaming())))

@@ -35,33 +35,38 @@ type Method interface {
 	// Name returns the name of the RPC method.
 	Name() string
 
-	// ClientStreaming returns true if the method uses "client streaming", that
-	// is, streams of requests.
-	ClientStreaming() bool
+	// InputIsStream returns true if the method accepts a stream of input
+	// messages, as opposed to a single input message.
+	InputIsStream() bool
 
-	// ServerStreaming returns true fi the method uses "server streaming", that
-	// is, streams of responses.
-	ServerStreaming() bool
+	// OutputIsStream returns true if the method produces a stream of output
+	// messages, as opposed to a single output message.
+	OutputIsStream() bool
 
 	// NewCall starts a new call to the method.
 	//
-	// ctx is the context for the lifetime of the call, including the time taken
-	// to stream requests and responses.
-	NewCall(context.Context) Call
+	// ctx is the context for the lifetime of the call, including any time taken
+	// to stream input and output messages.
+	NewCall(ctx context.Context) Call
 }
 
-// Call encapsulates the state of a single invocation of an RPC method.
+// Call represents a single invocation of an RPC method.
 type Call interface {
-	// Recv returns the next response from the call.
+	// Send sends an input message to the call.
 	//
-	// If there are no more responses, ok is false.
-	Recv() (_ proto.Message, ok bool, _ error)
+	// u is an unmarshaler that unmarshals the input message.
+	Send(u Unmarshaler) error
 
-	// Send sends the next request to the call.
-	Send(Unmarshaler) error
-
-	// Done is called to indicate that no more requests will be sent.
+	// Done is called to indicate that no more input messages will be sent.
 	Done()
+
+	// Recv returns the next output message produced by this call.
+	//
+	// If ok is true, out is the next output message. Otherwise, there are no
+	// more output messages to be received, and out is nil.
+	//
+	// err is the error returned by the RPC method, if any.
+	Recv() (out proto.Message, ok bool, err error)
 }
 
 // Unmarshaler is a function that unmarshals a protocol buffers message into m.

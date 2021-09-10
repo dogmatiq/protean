@@ -63,46 +63,6 @@ func generateStreamingCallImpl(
 	out.Line()
 	out.Func().
 		Params(recv).
-		Id("Recv").
-		Params().
-		Params(
-			jen.Qual("google.golang.org/protobuf/proto", "Message"),
-			jen.Bool(),
-			jen.Error(),
-		).
-		Block(
-			jen.Select().Block(
-				jen.Case(
-					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
-				).Block(
-					jen.Return(
-						jen.Nil(),
-						jen.False(),
-						jen.Id("c").Dot("ctx").Dot("Err").Call(),
-					),
-				),
-				jen.Case(
-					jen.Id("res").Op(",").Id("ok").Op(":=").Op("<-").Id("c").Dot("out"),
-				).Block(
-					jen.If(jen.Id("ok")).Block(
-						jen.Return(
-							jen.Id("res"),
-							jen.True(),
-							jen.Nil(),
-						),
-					),
-					jen.Return(
-						jen.Nil(),
-						jen.False(),
-						jen.Id("c").Dot("err"),
-					),
-				),
-			),
-		)
-
-	out.Line()
-	out.Func().
-		Params(recv).
 		Id("Send").
 		Params(
 			jen.Id("unmarshal").Qual(runtimePackage, "Unmarshaler"),
@@ -147,6 +107,46 @@ func generateStreamingCallImpl(
 		Block(
 			jen.Close(
 				jen.Id("c").Dot("in"),
+			),
+		)
+
+	out.Line()
+	out.Func().
+		Params(recv).
+		Id("Recv").
+		Params().
+		Params(
+			jen.Qual("google.golang.org/protobuf/proto", "Message"),
+			jen.Bool(),
+			jen.Error(),
+		).
+		Block(
+			jen.Select().Block(
+				jen.Case(
+					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
+				).Block(
+					jen.Return(
+						jen.Nil(),
+						jen.False(),
+						jen.Id("c").Dot("ctx").Dot("Err").Call(),
+					),
+				),
+				jen.Case(
+					jen.Id("res").Op(",").Id("ok").Op(":=").Op("<-").Id("c").Dot("out"),
+				).Block(
+					jen.If(jen.Id("ok")).Block(
+						jen.Return(
+							jen.Id("res"),
+							jen.True(),
+							jen.Nil(),
+						),
+					),
+					jen.Return(
+						jen.Nil(),
+						jen.False(),
+						jen.Id("c").Dot("err"),
+					),
+				),
 			),
 		)
 
@@ -218,7 +218,7 @@ func generateStreamingCallImpl(
 						jen.Id("c").Dot("err").Op("=").
 							Qual("errors", "New").
 							Call(
-								jen.Lit("Done() was called without sending a request"),
+								jen.Lit("Done() was called before Send()"),
 							),
 					),
 				),

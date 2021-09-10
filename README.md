@@ -6,29 +6,28 @@
 [![Documentation](https://img.shields.io/badge/go.dev-reference-007d9c)](https://pkg.go.dev/github.com/dogmatiq/protean)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dogmatiq/protean)](https://goreportcard.com/report/github.com/dogmatiq/protean)
 
-This repository is a template for Dogmatiq Go modules.
+Protean is a framework for building RPC web services based on [Protocol Buffers
+service definitions](https://developers.google.com/protocol-buffers/docs/proto3#services).
 
-[Click here](https://github.com/dogmatiq/template/generate) to create a new
-repository from this template.
+Protean is similar to [gRPC](https://grpc.io/) and draws inspiration from
+[Twirp](https://github.com/twitchtv/twirp).
 
-After creating a repository from this template, follow these steps:
+## Goals
 
-- On the settings page (https://github.com/dogmatiq/protean/settings):
-  - Disable the "Wiki" feature
-  - Enable "Automatically delete head branches" under the "Merge button" section
-- Replace the string `protean` in all files with the actual repo name.
-- Add a secret named `CODECOV_TOKEN` containing the codecov.io token for the new repository.
-  - The secret is available [here](https://codecov.io/gh/dogmatiq/protean/settings).
-  - And is configured [here](https://github.com/dogmatiq/protean/settings/secrets)
-- Run the commands below to rename `.template` files to their proper names:
+- Full support for client, server and bidirectional streaming.
+- Services should be consumable by web browsers using standard browser APIs.
+- Services should be equally easy to consume from other servers in any language.
+- Provide adequate level of cache control for use with service workers.
+- Allow the client to choose the best encoding and transport on a per-call
+  basis. Options include "conventional" HTTP GET and POST requests, websockets,
+  server-sent events and JSON-RPC.
+- Produce [`http.Handler`](https://pkg.go.dev/net/http#Handler) implementations
+  that work with Go's standard web server.
+- Co-exist with gRPC services built from the same Protocol Buffers definitions.
 
-    ```
-    mv .github/dependabot.yml.template .github/dependabot.yml
-    mv .gitignore.template .gitignore
-    ```
+## Non-goals
 
-These renames are necessary because:
-- Dependabot doe not seem to inspect the commits that are copied from the
-  template, and hence does not find the config for new repositories.
-- The GitHub template system does not retain the `.gitignore` file from the
-  template in the new repository.
+- Hiding the fact that the server is RPC based.
+- Providing RESTful APIs, changing behavior based on HTTP methods.
+- Allowing fine-grained control over HTTP-specific behavior, such as setting headers.
+
