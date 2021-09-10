@@ -18,9 +18,11 @@ Protean is similar to [gRPC](https://grpc.io/) and draws inspiration from
 - Services should be consumable by web browsers using standard browser APIs.
 - Services should be equally easy to consume from other servers in any language.
 - Provide adequate level of cache control for use with service workers.
+- Allow the client to choose the best encoding (protobuf, json or text) on a
+  per-call basis.
 - Allow the client to choose the best encoding and transport on a per-call
   basis. Options include "conventional" HTTP GET and POST requests, websockets,
-  server-sent events and JSON-RPC.
+  server-sent events (SSE) and JSON-RPC.
 - Produce [`http.Handler`](https://pkg.go.dev/net/http#Handler) implementations
   that work with Go's standard web server.
 - Co-exist with gRPC services built from the same Protocol Buffers definitions.
@@ -30,4 +32,3 @@ Protean is similar to [gRPC](https://grpc.io/) and draws inspiration from
 - Hiding the fact that the server is RPC based.
 - Providing RESTful APIs, changing behavior based on HTTP methods.
 - Allowing fine-grained control over HTTP-specific behavior, such as setting headers.
-
