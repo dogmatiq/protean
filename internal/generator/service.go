@@ -8,7 +8,33 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-const runtimePackage = "github.com/dogmatiq/protean/runtime"
+// generateServiceRegisterFunction generates a function for registering a
+// service with a registry.
+func generateServiceRegisterFunction(
+	out *jen.File,
+	req *pluginpb.CodeGeneratorRequest,
+	f *descriptorpb.FileDescriptorProto,
+	s *descriptorpb.ServiceDescriptorProto,
+) {
+	ifaceName := interfaceName(s)
+	implName := serviceImplName(s)
+	funcName := fmt.Sprintf("ProteanRegister%sServer", s.GetName())
+
+	out.Commentf("%s registers a %s service with a Protean registry.", funcName, ifaceName)
+	out.Func().
+		Id(funcName).
+		Params(
+			jen.Id("r").Qual(runtimePackage, "Registry"),
+			jen.Id("s").Id(ifaceName),
+		).
+		Block(
+			jen.Id("r").Dot("RegisterService").Call(
+				jen.Op("&").Id(implName).Values(
+					jen.Id("s"),
+				),
+			),
+		)
+}
 
 // generateServiceImpl generates an implementation of runtime.Service for a
 // protocol buffers service.
@@ -26,22 +52,6 @@ func generateServiceImpl(
 	out.Type().Id(implName).Struct(
 		jen.Id("service").Id(ifaceName),
 	)
-
-	funcName := fmt.Sprintf("ProteanRegister%sServer", s.GetName())
-	out.Commentf("%s registers a %s service with a Protean server.", funcName, ifaceName)
-	out.Func().
-		Id(funcName).
-		Params(
-			jen.Id("r").Qual(runtimePackage, "Registry"),
-			jen.Id("s").Id(ifaceName),
-		).
-		Block(
-			jen.Id("r").Dot("RegisterService").Call(
-				jen.Op("&").Id(implName).Values(
-					jen.Id("s"),
-				),
-			),
-		)
 
 	recv := jen.Id("a").Op("*").Id(implName)
 
@@ -103,30 +113,19 @@ func generateServiceImpl(
 			jen.Switch(jen.Id("name")).Block(cases...),
 		)
 
-	for _, m := range s.GetMethod() {
-		generateMethodImpl(out, req, f, s, m)
-
-		if m.GetClientStreaming() || m.GetServerStreaming() {
-			generateStreamingCallImpl(
-				out,
-				req,
-				f,
-				s,
-				m,
-			)
-		} else {
-			// If this call doesn't use any streaming at all, use an optimised
-			// Call implementation that avoids starting extra goroutines
-			// necessary for streaming.
-			generateUnaryCallImpl(
-				out,
-				req,
-				f,
-				s,
-				m,
-			)
-		}
-	}
+	// out.Line()
+	// out.Func().
+	// 	Params(recv).
+	// 	Id("MethodByURL").
+	// 	Params(
+	// 		jen.Id("u").Op("*").Qual("net/url", "URL"),
+	// 	).
+	// 	Params(
+	// 		jen.Qual(runtimePackage, "Method"),
+	// 		jen.Qual(runtimePackage, "Unmarshaler"),
+	// 		jen.Bool(),
+	// 	).
+	// 	Block()
 }
 
 // serviceImplName returns the name to use for the type that implements

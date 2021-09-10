@@ -9,6 +9,8 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
+const runtimePackage = "github.com/dogmatiq/protean/runtime"
+
 // Generator produces a code generation response from a request.
 type Generator struct {
 	Version string

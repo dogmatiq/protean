@@ -6,8 +6,44 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateUnaryCallImpl generates an implementation of runtime.Call for a
-// unary protocol buffers method.
+// generateUnaryCallConstructor generates a function that constructs a
+// runtime.Call implementation for a unary RPC method.
+func generateUnaryCallConstructor(
+	out *jen.File,
+	req *pluginpb.CodeGeneratorRequest,
+	f *descriptorpb.FileDescriptorProto,
+	s *descriptorpb.ServiceDescriptorProto,
+	m *descriptorpb.MethodDescriptorProto,
+) {
+	ifaceName := interfaceName(s)
+	implName := callImplName(s, m)
+	funcName := newCallFuncName(s, m)
+
+	out.Commentf("%s returns a new runtime.Call for the %s.%s() method.", funcName, ifaceName, m.GetName())
+	out.Func().
+		Id(funcName).
+		Params(
+			jen.Id("ctx").Qual("context", "Context"),
+			jen.Id("service").Id(ifaceName),
+		).
+		Params(
+			jen.Qual(runtimePackage, "Call"),
+		).
+		Block(
+			jen.Return(
+				jen.Op("&").Id(implName).Values(
+					jen.Id("ctx"),
+					jen.Id("service"),
+					jen.Make(jen.Chan().Struct()),
+					jen.Nil(),
+					jen.Nil(),
+				),
+			),
+		)
+}
+
+// generateUnaryCallImpl generates an implementation of runtime.Call for a unary
+// RPC method.
 func generateUnaryCallImpl(
 	out *jen.File,
 	req *pluginpb.CodeGeneratorRequest,
@@ -30,29 +66,6 @@ func generateUnaryCallImpl(
 		jen.Id("res").Op("*").Qual(outputPkg, outputType),
 		jen.Id("err").Id("error"),
 	)
-
-	funcName := newCallFuncName(s, m)
-	out.Commentf("%s returns a new runtime.Call for the %s.%s() method.", funcName, ifaceName, m.GetName())
-	out.Func().
-		Id(funcName).
-		Params(
-			jen.Id("ctx").Qual("context", "Context"),
-			jen.Id("service").Id(ifaceName),
-		).
-		Params(
-			jen.Qual(runtimePackage, "Call"),
-		).
-		Block(
-			jen.Return(
-				jen.Op("&").Id(implName).Values(
-					jen.Id("ctx"),
-					jen.Id("service"),
-					jen.Make(jen.Chan().Struct()),
-					jen.Nil(),
-					jen.Nil(),
-				),
-			),
-		)
 
 	recv := jen.Id("c").Op("*").Id(implName)
 

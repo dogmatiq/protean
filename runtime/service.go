@@ -23,11 +23,19 @@ type Service interface {
 	// defined.
 	Package() string
 
-	// MethodByName returns information about a specific RPC method within the
-	// service.
+	// MethodByName returns the method with the given name.
 	//
 	// If no such method exists, ok is false.
 	MethodByName(name string) (_ Method, ok bool)
+
+	// // MethodByURL returns the method that matches the given HTTP request URL
+	// // based on the protean.method.http_route option.
+	// //
+	// // un an Unmarshaler that populates the method's input message based on path
+	// // segments and query parameters in the given URL.
+	// //
+	// // If no method matches this route, ok is false.
+	// MethodByURL(u *url.URL) (_ Method, un Unmarshaler, ok bool)
 }
 
 // Method encapsulates information about an RPC method.

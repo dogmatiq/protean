@@ -6,9 +6,9 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateStreamingCallImpl generates an implementation of runtime.Call for
-// a protocol buffers method that uses any kind of streaming.
-func generateStreamingCallImpl(
+// generateStreamingCallConstructor generates a function that constructs a
+// runtime.Call implementation for a streaming RPC method.
+func generateStreamingCallConstructor(
 	out *jen.File,
 	req *pluginpb.CodeGeneratorRequest,
 	f *descriptorpb.FileDescriptorProto,
@@ -17,21 +17,10 @@ func generateStreamingCallImpl(
 ) {
 	ifaceName := interfaceName(s)
 	implName := callImplName(s, m)
-
+	funcName := newCallFuncName(s, m)
 	inputPkg, inputType, _ := goType(req, m.GetInputType())
 	outputPkg, outputType, _ := goType(req, m.GetOutputType())
 
-	out.Commentf("%s is an implementation of the runtime.Call", implName)
-	out.Commentf("interface for the %s.%s() method.", s.GetName(), m.GetName())
-	out.Type().Id(implName).Struct(
-		jen.Id("ctx").Qual("context", "Context"),
-		jen.Id("service").Id(ifaceName),
-		jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
-		jen.Id("out").Chan().Op("*").Qual(outputPkg, outputType),
-		jen.Id("err").Id("error"),
-	)
-
-	funcName := newCallFuncName(s, m)
 	out.Commentf("%s returns a new runtime.Call for the %s.%s() method.", funcName, ifaceName, m.GetName())
 	out.Func().
 		Id(funcName).
@@ -57,6 +46,31 @@ func generateStreamingCallImpl(
 				jen.Id("c"),
 			),
 		)
+}
+
+// generateStreamingCallImpl generates an implementation of runtime.Call for
+// a protocol buffers method that uses any kind of streaming.
+func generateStreamingCallImpl(
+	out *jen.File,
+	req *pluginpb.CodeGeneratorRequest,
+	f *descriptorpb.FileDescriptorProto,
+	s *descriptorpb.ServiceDescriptorProto,
+	m *descriptorpb.MethodDescriptorProto,
+) {
+	ifaceName := interfaceName(s)
+	implName := callImplName(s, m)
+	inputPkg, inputType, _ := goType(req, m.GetInputType())
+	outputPkg, outputType, _ := goType(req, m.GetOutputType())
+
+	out.Commentf("%s is an implementation of the runtime.Call", implName)
+	out.Commentf("interface for the %s.%s() method.", s.GetName(), m.GetName())
+	out.Type().Id(implName).Struct(
+		jen.Id("ctx").Qual("context", "Context"),
+		jen.Id("service").Id(ifaceName),
+		jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
+		jen.Id("out").Chan().Op("*").Qual(outputPkg, outputType),
+		jen.Id("err").Id("error"),
+	)
 
 	recv := jen.Id("c").Op("*").Id(implName)
 

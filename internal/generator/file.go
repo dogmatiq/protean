@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateFile generates a Go file for the given input protobuffers file.
+// generateFile generates a Go file for the given input .proto file.
 func generateFile(
 	req *pluginpb.CodeGeneratorRequest,
 	f *descriptorpb.FileDescriptorProto,
@@ -37,21 +37,9 @@ func generateFile(
 	out.HeaderComment(fmt.Sprintf("// source: %s", f.GetName()))
 
 	for _, s := range services {
-		if err := generateInterface(
-			out,
-			req,
-			f,
-			s,
-		); err != nil {
+		if err := generateCodeForService(out, req, f, s); err != nil {
 			return nil, false, err
 		}
-
-		generateServiceImpl(
-			out,
-			req,
-			f,
-			s,
-		)
 	}
 
 	var w strings.Builder
@@ -94,4 +82,76 @@ func formatProtocVersion(req *pluginpb.CodeGeneratorRequest) string {
 	}
 
 	return s
+}
+
+// generateCodeForService generates all of the code necessary for a single
+// Protocol Buffers service.
+func generateCodeForService(
+	out *jen.File,
+	req *pluginpb.CodeGeneratorRequest,
+	f *descriptorpb.FileDescriptorProto,
+	s *descriptorpb.ServiceDescriptorProto,
+) error {
+	if err := generateInterface(
+		out,
+		req,
+		f,
+		s,
+	); err != nil {
+		return err
+	}
+
+	generateServiceRegisterFunction(
+		out,
+		req,
+		f,
+		s,
+	)
+
+	generateServiceImpl(
+		out,
+		req,
+		f,
+		s,
+	)
+
+	for _, m := range s.GetMethod() {
+		generateMethodImpl(out, req, f, s, m)
+
+		if m.GetClientStreaming() || m.GetServerStreaming() {
+			generateStreamingCallConstructor(
+				out,
+				req,
+				f,
+				s,
+				m,
+			)
+
+			generateStreamingCallImpl(
+				out,
+				req,
+				f,
+				s,
+				m,
+			)
+		} else {
+			generateUnaryCallConstructor(
+				out,
+				req,
+				f,
+				s,
+				m,
+			)
+
+			generateUnaryCallImpl(
+				out,
+				req,
+				f,
+				s,
+				m,
+			)
+		}
+	}
+
+	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// generateInterface generates a Go interface for a protocol buffers service.
+// generateInterface generates a Go interface for a Protocol Buffers service.
 func generateInterface(
 	out *jen.File,
 	req *pluginpb.CodeGeneratorRequest,
