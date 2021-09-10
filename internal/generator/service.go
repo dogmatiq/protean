@@ -91,7 +91,7 @@ func generateServiceImpl(
 	out.Line()
 	out.Func().
 		Params(recv).
-		Id("LookupMethod").
+		Id("MethodByName").
 		Params(
 			jen.Id("name").String(),
 		).

@@ -23,11 +23,11 @@ type Service interface {
 	// defined.
 	Package() string
 
-	// LookupMethod returns information about a specific RPC method within the
+	// MethodByName returns information about a specific RPC method within the
 	// service.
 	//
 	// If no such method exists, ok is false.
-	LookupMethod(name string) (_ Method, ok bool)
+	MethodByName(name string) (_ Method, ok bool)
 }
 
 // Method encapsulates information about an RPC method.

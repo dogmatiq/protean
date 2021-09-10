@@ -71,7 +71,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	method, ok := service.LookupMethod(methodName)
+	method, ok := service.MethodByName(methodName)
 	if !ok {
 		http.Error(
 			w,
