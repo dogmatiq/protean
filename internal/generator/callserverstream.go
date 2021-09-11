@@ -97,8 +97,6 @@ func appendServerStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 
 		// run method
 		[]jen.Code{
-			jen.Defer().Close(jen.Id("c").Dot("out")),
-			jen.Line(),
 			jen.Select().Block(
 				jen.Case(
 					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
@@ -117,6 +115,8 @@ func appendServerStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 						),
 				),
 			),
+			jen.Line(),
+			jen.Close(jen.Id("c").Dot("out")),
 		},
 	)
 }

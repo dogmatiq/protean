@@ -24,6 +24,20 @@ func appendService(code *jen.File, s *scope.Service) error {
 // appendServiceRegisterFunction appends generated code for the user-facing
 // function that registers a service with a registry.
 func appendServiceRegisterFunction(code *jen.File, s *scope.Service) {
+	params := []jen.Code{}
+
+	for _, m := range s.ServiceDesc.GetMethod() {
+		s := s.EnterMethod(m)
+		params = append(
+			params,
+			jen.Line().Id(s.RuntimeMethodImpl()).Values(
+				jen.Id("s"),
+			),
+		)
+	}
+
+	params = append(params, jen.Line())
+
 	code.Commentf(
 		"%s registers a %s service with a Protean registry.",
 		s.ServiceRegisterFunc(),
@@ -38,15 +52,40 @@ func appendServiceRegisterFunction(code *jen.File, s *scope.Service) {
 		Block(
 			jen.Id("r").Dot("RegisterService").Call(
 				jen.Op("&").Id(s.RuntimeServiceImpl()).Values(
-					jen.Id("s"),
+					params...,
 				),
 			),
 		)
+
 }
 
 // appendRuntimeServiceImpl appends a generated implementation of
 // runtime.Service to the output.
 func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
+	var fields, methodByNameCases []jen.Code
+
+	for _, m := range s.ServiceDesc.GetMethod() {
+		s := s.EnterMethod(m)
+		fieldName := "method" + s.MethodDesc.GetName()
+
+		fields = append(
+			fields,
+			jen.Id(fieldName).Id(s.RuntimeMethodImpl()),
+		)
+
+		methodByNameCases = append(
+			methodByNameCases,
+			jen.Case(
+				jen.Lit(m.GetName()),
+			).Block(
+				jen.Return(
+					jen.Op("&").Id("s").Dot(fieldName),
+					jen.True(),
+				),
+			),
+		)
+	}
+
 	code.Commentf(
 		"%s is a runtime.Service implementation for the %s.%s service.",
 		s.RuntimeServiceImpl(),
@@ -55,11 +94,9 @@ func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
 	)
 	code.Type().
 		Id(s.RuntimeServiceImpl()).
-		Struct(
-			jen.Id("service").Id(s.ServiceInterface()),
-		)
+		Struct(fields...)
 
-	recv := jen.Id("a").Op("*").Id(s.RuntimeServiceImpl())
+	recv := jen.Id("s").Op("*").Id(s.RuntimeServiceImpl())
 
 	code.Line()
 	code.Func().
@@ -77,35 +114,6 @@ func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
 		Params(jen.String()).
 		Block(jen.Return(jen.Lit(s.FileDesc.GetPackage())))
 
-	var cases []jen.Code
-	for _, m := range s.ServiceDesc.GetMethod() {
-		s := s.EnterMethod(m)
-
-		cases = append(
-			cases,
-			jen.Case(
-				jen.Lit(m.GetName()),
-			).Block(
-				jen.Return(
-					jen.Op("&").Id(s.RuntimeMethodImpl()).Values(
-						jen.Id("a").Dot("service"),
-					),
-					jen.True(),
-				),
-			),
-		)
-	}
-
-	cases = append(
-		cases,
-		jen.Default().Block(
-			jen.Return(
-				jen.Nil(),
-				jen.False(),
-			),
-		),
-	)
-
 	// TODO: avoid constructing new method instances each time
 	code.Line()
 	code.Func().
@@ -119,7 +127,11 @@ func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
 			jen.Bool(),
 		).
 		Block(
-			jen.Switch(jen.Id("name")).Block(cases...),
+			jen.Switch(jen.Id("name")).Block(methodByNameCases...),
+			jen.Return(
+				jen.Nil(),
+				jen.False(),
+			),
 		)
 
 	// out.Line()
