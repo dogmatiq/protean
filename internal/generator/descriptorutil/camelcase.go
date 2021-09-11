@@ -1,4 +1,4 @@
-package generator
+package descriptorutil
 
 // camelCase returns the CamelCase version of a snake_case identifier.
 // It is intended to produce the same type names as protoc-gen-go.

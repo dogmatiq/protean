@@ -2,125 +2,72 @@ package generator
 
 import (
 	"github.com/dave/jennifer/jen"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/pluginpb"
+	"github.com/dogmatiq/protean/internal/generator/scope"
 )
 
-// generateUnaryCallConstructor generates a function that constructs a
+// appendUnaryRuntimeCallConstructor appends a function that constructs a
 // runtime.Call implementation for a unary RPC method.
-func generateUnaryCallConstructor(
-	out *jen.File,
-	req *pluginpb.CodeGeneratorRequest,
-	f *descriptorpb.FileDescriptorProto,
-	s *descriptorpb.ServiceDescriptorProto,
-	m *descriptorpb.MethodDescriptorProto,
-) {
-	ifaceName := interfaceName(s)
-	implName := callImplName(s, m)
-	funcName := newCallFuncName(s, m)
+func appendUnaryRuntimeCallConstructor(code *jen.File, s *scope.Method) {
+	inputPkg, inputType, _ := s.GoInputType()
 
-	out.Commentf("%s returns a new runtime.Call for the %s.%s() method.", funcName, ifaceName, m.GetName())
-	out.Func().
-		Id(funcName).
-		Params(
-			jen.Id("ctx").Qual("context", "Context"),
-			jen.Id("service").Id(ifaceName),
-		).
-		Params(
-			jen.Qual(runtimePackage, "Call"),
-		).
-		Block(
+	appendRuntimeCallConstructor(
+		code,
+		s,
+		[]jen.Code{
 			jen.Return(
-				jen.Op("&").Id(implName).Values(
+				jen.Op("&").Id(s.RuntimeCallImpl()).Values(
 					jen.Id("ctx"),
 					jen.Id("service"),
-					jen.Make(jen.Chan().Struct()),
-					jen.Nil(),
-					jen.Nil(),
+					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType), jen.Lit(1)),
 				),
 			),
-		)
+		},
+	)
 }
 
-// generateUnaryCallImpl generates an implementation of runtime.Call for a unary
-// RPC method.
-func generateUnaryCallImpl(
-	out *jen.File,
-	req *pluginpb.CodeGeneratorRequest,
-	f *descriptorpb.FileDescriptorProto,
-	s *descriptorpb.ServiceDescriptorProto,
-	m *descriptorpb.MethodDescriptorProto,
-) {
-	ifaceName := interfaceName(s)
-	implName := callImplName(s, m)
+// appendUnaryRuntimeCallImpl appends an implementation of runtime.Call for a
+// unary RPC method.
+func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
+	inputPkg, inputType, _ := s.GoInputType()
 
-	inputPkg, inputType, _ := goType(req, m.GetInputType())
-	outputPkg, outputType, _ := goType(req, m.GetOutputType())
+	appendRuntimeCallImpl(
+		code,
+		s,
 
-	out.Commentf("%s is an implementation of the runtime.Call", implName)
-	out.Commentf("interface for the %s.%s() method.", s.GetName(), m.GetName())
-	out.Type().Id(implName).Struct(
-		jen.Id("ctx").Qual("context", "Context"),
-		jen.Id("service").Id(ifaceName),
-		jen.Id("done").Chan().Struct(),
-		jen.Id("res").Op("*").Qual(outputPkg, outputType),
-		jen.Id("err").Id("error"),
-	)
+		// struct fields
+		[]jen.Code{
+			jen.Id("ctx").Qual("context", "Context"),
+			jen.Id("service").Id(s.ServiceInterface()),
+			jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
+		},
 
-	recv := jen.Id("c").Op("*").Id(implName)
-
-	out.Line()
-	out.Func().
-		Params(recv).
-		Id("Send").
-		Params(
-			jen.Id("unmarshal").Qual(runtimePackage, "Unmarshaler"),
-		).
-		Params(
-			jen.Error(),
-		).
-		Block(
-			jen.Id("req").Op(":=").Op("&").Qual(inputPkg, inputType).Values(),
+		// send method
+		[]jen.Code{
+			jen.Id("in").Op(":=").Op("&").Qual(inputPkg, inputType).Values(),
 			jen.If(
-				jen.Id("err").Op(":=").Id("unmarshal").Call(jen.Id("req")),
+				jen.Id("err").Op(":=").Id("unmarshal").Call(jen.Id("in")),
 				jen.Id("err").Op("!=").Nil(),
 			).Block(
 				jen.Return(
+					jen.False(),
 					jen.Id("err"),
 				),
 			),
 			jen.Line(),
-			jen.Id("c").Dot("res").Op(",").Id("c").Dot("err").Op("=").
-				Id("c").Dot("service").Dot(m.GetName()).
-				Call(
-					jen.Id("c").Dot("ctx"),
-					jen.Id("req"),
-				),
-			jen.Close(jen.Id("c").Dot("done")),
+			jen.Id("c").Dot("in").Op("<-").Id("in"),
+			jen.Close(jen.Id("c").Dot("in")),
 			jen.Line(),
 			jen.Return(
+				jen.False(),
 				jen.Nil(),
 			),
-		)
+		},
 
-	out.Line()
-	out.Func().
-		Params(recv).
-		Id("Done").
-		Params().
-		Block()
+		// done method
+		[]jen.Code{},
 
-	out.Line()
-	out.Func().
-		Params(recv).
-		Id("Recv").
-		Params().
-		Params(
-			jen.Qual("google.golang.org/protobuf/proto", "Message"),
-			jen.Bool(),
-			jen.Error(),
-		).
-		Block(
+		// recv method
+		[]jen.Code{
 			jen.Select().Block(
 				jen.Case(
 					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
@@ -132,14 +79,32 @@ func generateUnaryCallImpl(
 					),
 				),
 				jen.Case(
-					jen.Op("<-").Id("c").Dot("done"),
+					jen.Id("in").Op(",").Id("ok").Op(":=").Op("<-").Id("c").Dot("in"),
 				).Block(
-					jen.Return(
-						jen.Id("c").Dot("res"),
-						jen.Id("c").Dot("err").Op("==").Nil(),
-						jen.Id("c").Dot("err"),
+					jen.If(jen.Op("!").Id("ok")).Block(
+						jen.Return(
+							jen.Nil(),
+							jen.False(),
+							jen.Nil(),
+						),
 					),
 				),
+				jen.Line(),
+				jen.Id("out").Op(",").Id("err").Op(":=").
+					Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
+					Call(
+						jen.Id("c").Dot("ctx"),
+						jen.Id("in"),
+					),
+				jen.Return(
+					jen.Id("out"),
+					jen.False(),
+					jen.Id("err"),
+				),
 			),
-		)
+		},
+
+		// run method
+		nil,
+	)
 }

@@ -62,19 +62,21 @@ type Method interface {
 type Call interface {
 	// Send sends an input message to the call.
 	//
-	// u is an unmarshaler that unmarshals the input message.
-	Send(u Unmarshaler) error
+	// u is an unmarshaler that produces the input message.
+	// err is the error produced by the unmarshaler.
+	//
+	// more is true if the call can accept additional input messages.
+	Send(u Unmarshaler) (more bool, err error)
 
 	// Done is called to indicate that no more input messages will be sent.
 	Done()
 
 	// Recv returns the next output message produced by this call.
 	//
-	// If ok is true, out is the next output message. Otherwise, there are no
-	// more output messages to be received, and out is nil.
+	// more is true if the call can produce additional output messages.
 	//
 	// err is the error returned by the RPC method, if any.
-	Recv() (out proto.Message, ok bool, err error)
+	Recv() (out proto.Message, more bool, err error)
 }
 
 // Unmarshaler is a function that unmarshals a protocol buffers message into m.

@@ -1,85 +1,93 @@
 package generator
 
 import (
-	"fmt"
-
 	"github.com/dave/jennifer/jen"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/pluginpb"
+	"github.com/dogmatiq/protean/internal/generator/scope"
 )
 
-// generateServiceRegisterFunction generates a function for registering a
-// service with a registry.
-func generateServiceRegisterFunction(
-	out *jen.File,
-	req *pluginpb.CodeGeneratorRequest,
-	f *descriptorpb.FileDescriptorProto,
-	s *descriptorpb.ServiceDescriptorProto,
-) {
-	ifaceName := interfaceName(s)
-	implName := serviceImplName(s)
-	funcName := fmt.Sprintf("ProteanRegister%sServer", s.GetName())
+// appendService appends all generated code for an RPC service to the output.
+func appendService(code *jen.File, s *scope.Service) error {
+	if err := appendServiceInterface(code, s); err != nil {
+		return err
+	}
 
-	out.Commentf("%s registers a %s service with a Protean registry.", funcName, ifaceName)
-	out.Func().
-		Id(funcName).
+	appendServiceRegisterFunction(code, s)
+	appendRuntimeServiceImpl(code, s)
+
+	for _, m := range s.ServiceDesc.GetMethod() {
+		appendMethod(code, s.EnterMethod(m))
+	}
+
+	return nil
+}
+
+// appendServiceRegisterFunction appends generated code for the user-facing
+// function that registers a service with a registry.
+func appendServiceRegisterFunction(code *jen.File, s *scope.Service) {
+	code.Commentf(
+		"%s registers a %s service with a Protean registry.",
+		s.ServiceRegisterFunc(),
+		s.ServiceInterface(),
+	)
+	code.Func().
+		Id(s.ServiceRegisterFunc()).
 		Params(
 			jen.Id("r").Qual(runtimePackage, "Registry"),
-			jen.Id("s").Id(ifaceName),
+			jen.Id("s").Id(s.ServiceInterface()),
 		).
 		Block(
 			jen.Id("r").Dot("RegisterService").Call(
-				jen.Op("&").Id(implName).Values(
+				jen.Op("&").Id(s.RuntimeServiceImpl()).Values(
 					jen.Id("s"),
 				),
 			),
 		)
 }
 
-// generateServiceImpl generates an implementation of runtime.Service for a
-// protocol buffers service.
-func generateServiceImpl(
-	out *jen.File,
-	req *pluginpb.CodeGeneratorRequest,
-	f *descriptorpb.FileDescriptorProto,
-	s *descriptorpb.ServiceDescriptorProto,
-) {
-	ifaceName := interfaceName(s)
-	implName := serviceImplName(s)
-
-	out.Commentf("%s is an implementation of the runtime.Service", implName)
-	out.Commentf("interface for the %s service.", s.GetName())
-	out.Type().Id(implName).Struct(
-		jen.Id("service").Id(ifaceName),
+// appendRuntimeServiceImpl appends a generated implementation of
+// runtime.Service to the output.
+func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
+	code.Commentf(
+		"%s is a runtime.Service implementation for the %s.%s service.",
+		s.RuntimeServiceImpl(),
+		s.FileDesc.GetPackage(),
+		s.ServiceDesc.GetName(),
 	)
+	code.Type().
+		Id(s.RuntimeServiceImpl()).
+		Struct(
+			jen.Id("service").Id(s.ServiceInterface()),
+		)
 
-	recv := jen.Id("a").Op("*").Id(implName)
+	recv := jen.Id("a").Op("*").Id(s.RuntimeServiceImpl())
 
-	out.Line()
-	out.Func().
+	code.Line()
+	code.Func().
 		Params(recv).
 		Id("Name").
 		Params().
 		Params(jen.String()).
-		Block(jen.Return(jen.Lit(s.GetName())))
+		Block(jen.Return(jen.Lit(s.ServiceDesc.GetName())))
 
-	out.Line()
-	out.Func().
+	code.Line()
+	code.Func().
 		Params(recv).
 		Id("Package").
 		Params().
 		Params(jen.String()).
-		Block(jen.Return(jen.Lit(f.GetPackage())))
+		Block(jen.Return(jen.Lit(s.FileDesc.GetPackage())))
 
 	var cases []jen.Code
-	for _, m := range s.GetMethod() {
+	for _, m := range s.ServiceDesc.GetMethod() {
+		s := s.EnterMethod(m)
+
 		cases = append(
 			cases,
 			jen.Case(
 				jen.Lit(m.GetName()),
 			).Block(
 				jen.Return(
-					jen.Op("&").Id(methodImplName(s, m)).Values(
+					jen.Op("&").Id(s.RuntimeMethodImpl()).Values(
 						jen.Id("a").Dot("service"),
 					),
 					jen.True(),
@@ -98,8 +106,9 @@ func generateServiceImpl(
 		),
 	)
 
-	out.Line()
-	out.Func().
+	// TODO: avoid constructing new method instances each time
+	code.Line()
+	code.Func().
 		Params(recv).
 		Id("MethodByName").
 		Params(
@@ -126,12 +135,4 @@ func generateServiceImpl(
 	// 		jen.Bool(),
 	// 	).
 	// 	Block()
-}
-
-// serviceImplName returns the name to use for the type that implements
-// runtime.Method for the given method.
-func serviceImplName(
-	s *descriptorpb.ServiceDescriptorProto,
-) string {
-	return fmt.Sprintf("protean_%s_Service", s.GetName())
 }

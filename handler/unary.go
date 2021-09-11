@@ -66,7 +66,7 @@ func (h *unaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	call := h.Method.NewCall(r.Context())
 
-	err := call.Send(u)
+	_, err := call.Send(u)
 	call.Done()
 
 	if err != nil {
