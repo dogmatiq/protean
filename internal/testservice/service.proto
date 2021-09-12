@@ -3,7 +3,7 @@ package protean.test;
 
 option go_package = "github.com/dogmatiq/protean/internal/testservice";
 
-import "github.com/dogmatiq/protean/proto/options.proto";
+import "github.com/dogmatiq/protean/options/options.proto";
 
 // TestService is a service used to test transport implementations.
 service TestService {
@@ -16,21 +16,21 @@ service TestService {
   // ClientStream is an RPC method that accepts a stream of input messages and
   // responds with a single output message.
   rpc ClientStream(stream Input) returns (Output) {
-    option (protean.method).http_route = "/client-stream/:id";
+    option (protean.method).http_route = "/stream/:id/client-only";
   }
 
   // ServerStream is an RPC method accepts a single input message and responds
   // with a stream of output messages.
   rpc ServerStream(Input) returns (stream Output) {
-    option (protean.method).http_route = "/server-stream/:id";
+    option (protean.method).http_route = "/stream/:id/server-only";
   }
   
   // BidirectionalStream is an RPC method that accepts a stream of input
   // messages and responds with a stream of output messages.
   rpc BidirectionalStream(stream Input) returns (stream Output) {
-    option (protean.method).http_route = "/bidirectional-stream/:id";
+    option (protean.method).http_route = "/stream/:id";
   }
-} 
+}
 
 // Input is the message used as inputs to all of the RPC methods in the test
 // service.

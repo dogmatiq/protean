@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/dogmatiq/protean/internal/generator/descriptorutil"
+	"github.com/dogmatiq/protean/options"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -42,6 +44,13 @@ func (s *Method) RuntimeMethodImpl() string {
 	)
 }
 
+// RuntimeMethodField returns the name of the field within the runtime.Service
+// implementation that contains the runtime.Method implementation for this
+// method.
+func (s *Method) RuntimeMethodField() string {
+	return "method" + s.MethodDesc.GetName()
+}
+
 // RuntimeCallImpl returns the name of the runtime.Call implementation for this method.
 func (s *Method) RuntimeCallImpl() string {
 	return fmt.Sprintf(
@@ -59,4 +68,15 @@ func (s *Method) RuntimeCallConstructor() string {
 		s.ServiceDesc.GetName(),
 		s.MethodDesc.GetName(),
 	)
+}
+
+// MethodOptions returns the Protean method options for this method.
+func (s *Method) MethodOptions() *options.MethodOptions {
+	opts := s.MethodDesc.GetOptions()
+
+	if proto.HasExtension(opts, options.E_Method) {
+		return proto.GetExtension(opts, options.E_Method).(*options.MethodOptions)
+	}
+
+	return nil
 }

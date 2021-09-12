@@ -28,14 +28,14 @@ type Service interface {
 	// If no such method exists, ok is false.
 	MethodByName(name string) (_ Method, ok bool)
 
-	// // MethodByURL returns the method that matches the given HTTP request URL
+	// // MethodByRoute returns the method that matches the given HTTP request path
 	// // based on the protean.method.http_route option.
 	// //
-	// // un an Unmarshaler that populates the method's input message based on path
-	// // segments and query parameters in the given URL.
+	// // un an Unmarshaler that populates the method's input message based on
+	// // parameterized path segments and query parameters.
 	// //
 	// // If no method matches this route, ok is false.
-	// MethodByURL(u *url.URL) (_ Method, un Unmarshaler, ok bool)
+	// MethodByRoute(path string, params url.Values) (_ Method, un Unmarshaler, ok bool)
 }
 
 // Method encapsulates information about an RPC method.

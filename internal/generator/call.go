@@ -77,7 +77,7 @@ func appendRuntimeCallImpl(
 		Id("Recv").
 		Params().
 		Params(
-			jen.Qual("google.golang.org/protobuf/proto", "Message"),
+			jen.Qual(protoPackage, "Message"),
 			jen.Bool(),
 			jen.Error(),
 		).

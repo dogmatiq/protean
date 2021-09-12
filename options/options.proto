@@ -1,7 +1,7 @@
 syntax = "proto3";
 package protean;
 
-option go_package = "github.com/dogmatiq/protean/proto";
+option go_package = "github.com/dogmatiq/protean/options";
 
 import "google/protobuf/descriptor.proto";
 

@@ -12,10 +12,15 @@ func appendService(code *jen.File, s *scope.Service) error {
 	}
 
 	appendServiceRegisterFunction(code, s)
-	appendRuntimeServiceImpl(code, s)
+
+	if err := appendRuntimeServiceImpl(code, s); err != nil {
+		return err
+	}
 
 	for _, m := range s.ServiceDesc.GetMethod() {
-		appendMethod(code, s.EnterMethod(m))
+		if err := appendMethod(code, s.EnterMethod(m)); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -61,16 +66,19 @@ func appendServiceRegisterFunction(code *jen.File, s *scope.Service) {
 
 // appendRuntimeServiceImpl appends a generated implementation of
 // runtime.Service to the output.
-func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
+func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) error {
 	var fields, methodByNameCases []jen.Code
 
 	for _, m := range s.ServiceDesc.GetMethod() {
 		s := s.EnterMethod(m)
-		fieldName := "method" + s.MethodDesc.GetName()
 
 		fields = append(
 			fields,
-			jen.Id(fieldName).Id(s.RuntimeMethodImpl()),
+			jen.Id(
+				s.RuntimeMethodField(),
+			).Id(
+				s.RuntimeMethodImpl(),
+			),
 		)
 
 		methodByNameCases = append(
@@ -79,7 +87,7 @@ func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
 				jen.Lit(m.GetName()),
 			).Block(
 				jen.Return(
-					jen.Op("&").Id("s").Dot(fieldName),
+					jen.Op("&").Id("s").Dot(s.RuntimeMethodField()),
 					jen.True(),
 				),
 			),
@@ -114,7 +122,6 @@ func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
 		Params(jen.String()).
 		Block(jen.Return(jen.Lit(s.FileDesc.GetPackage())))
 
-	// TODO: avoid constructing new method instances each time
 	code.Line()
 	code.Func().
 		Params(recv).
@@ -134,17 +141,25 @@ func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
 			),
 		)
 
-	// out.Line()
-	// out.Func().
+	// statements, err := genMethodByRouteLogic(s)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// code.Line()
+	// code.Func().
 	// 	Params(recv).
-	// 	Id("MethodByURL").
+	// 	Id("MethodByRoute").
 	// 	Params(
-	// 		jen.Id("u").Op("*").Qual("net/url", "URL"),
+	// 		jen.Id("path").String(),
+	// 		jen.Id("params").Qual("net/url", "Values"),
 	// 	).
 	// 	Params(
 	// 		jen.Qual(runtimePackage, "Method"),
 	// 		jen.Qual(runtimePackage, "Unmarshaler"),
 	// 		jen.Bool(),
 	// 	).
-	// 	Block()
+	// 	Block(statements...)
+
+	return nil
 }

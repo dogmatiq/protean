@@ -28,37 +28,13 @@ func GoPackage(f *descriptorpb.FileDescriptorProto) (string, string, error) {
 	return pkg, path.Base(pkg), nil
 }
 
-// Find returns the descriptor for the given protocol buffers type.
-func Find(
-	candidates []*descriptorpb.FileDescriptorProto,
-	protoName string,
-) (*descriptorpb.FileDescriptorProto, *descriptorpb.DescriptorProto, error) {
-	i := strings.LastIndexByte(protoName, '.')
-	pkg := protoName[1:i] // also trim leading .
-	name := protoName[i+1:]
-
-	for _, f := range candidates {
-		if f.GetPackage() != pkg {
-			continue
-		}
-
-		for _, m := range f.GetMessageType() {
-			if m.GetName() == name {
-				return f, m, nil
-			}
-		}
-	}
-
-	return nil, nil, fmt.Errorf("none of the known files contain a definition for %s", protoName)
-}
-
 // GoType returns the package path and type name for the Go type that represents
 // the given protocol buffers type.
 func GoType(
 	candidates []*descriptorpb.FileDescriptorProto,
 	protoName string,
 ) (string, string, error) {
-	f, t, err := Find(candidates, protoName)
+	f, t, err := FindType(candidates, protoName)
 	if err != nil {
 		return "", "", err
 	}
@@ -69,4 +45,10 @@ func GoType(
 	}
 
 	return pkgPath, camelCase(t.GetName()), nil
+}
+
+// GoFieldName returns the Go struct field name that corresponds to the given
+// Protocol Buffers field.
+func GoFieldName(n string) string {
+	return camelCase(n)
 }
