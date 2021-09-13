@@ -2,8 +2,8 @@ PROTO_GRPC_FILES := # Disable GRPC generation
 GENERATED_FILES += $(foreach f,$(PROTO_FILES:.proto=_protean.pb.go),$(if $(findstring /_,/$f),,$f))
 
 -include .makefiles/Makefile
--include .makefiles/pkg/go/v1/Makefile
 -include .makefiles/pkg/protobuf/v2/Makefile
+-include .makefiles/pkg/go/v1/Makefile
 
 run:
 	@echo $(GENERATED_FILES)
