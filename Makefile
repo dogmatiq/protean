@@ -1,12 +1,13 @@
 PROTO_GRPC_FILES := # Disable GRPC generation
-GENERATED_FILES += $(foreach f,$(PROTO_FILES:.proto=_protean.pb.go),$(if $(findstring /_,/$f),,$f))
+
+# Note, this file depends on the protoc-gen-go-protean binary from this repo to
+# be build. It has been added to .gitignore so that it excluded from the
+# GO_SOURCE_FILES variable, as otherwise it would create a circular dependency.
+GO_TEST_REQ += internal/testservice/service_protean.pb.go
 
 -include .makefiles/Makefile
 -include .makefiles/pkg/protobuf/v2/Makefile
 -include .makefiles/pkg/go/v1/Makefile
-
-run:
-	@echo $(GENERATED_FILES)
 
 %_protean.pb.go: %.proto $(PROTOC_COMMAND) artifacts/protobuf/bin/go.mod artifacts/protobuf/args/common artifacts/protobuf/args/go $(GO_DEBUG_DIR)/protoc-gen-go-protean
 	PATH="$(GO_DEBUG_DIR):$(MF_PROJECT_ROOT)/artifacts/protobuf/bin:$$PATH" $(PROTOC_COMMAND) \
