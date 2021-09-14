@@ -22,11 +22,16 @@ func httpError(
 
 // httpErrorUnsupportedMedia writes an HTTP 415 "Unsupported Media Type" error
 // to w in plain text format.
-func httpErrorUnsupportedMedia(w http.ResponseWriter, acceptable []string) {
+func httpErrorUnsupportedMedia(
+	w http.ResponseWriter,
+	mediaType string,
+	acceptable []string,
+) {
 	httpError(
 		w,
-		http.StatusNotAcceptable,
-		"The server does not support the content-type supplied by the client.",
+		http.StatusUnsupportedMediaType,
+		"The server does not support the '%s' media-type supplied by the client.",
+		mediaType,
 	)
 
 	fmt.Fprintln(w, "\nThe supported types are, in order of preference:")

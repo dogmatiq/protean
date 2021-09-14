@@ -3,10 +3,9 @@ package protean
 import (
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
-	"path"
 	"strconv"
+	"strings"
 
 	"github.com/dogmatiq/protean/runtime"
 	"google.golang.org/protobuf/proto"
@@ -15,7 +14,7 @@ import (
 // PostHandler is an http.Handler that handles RPC calls made by posting to an
 // RPC method endpoint.
 type PostHandler struct {
-	serviceByPath map[string]runtime.Service
+	services map[string]runtime.Service
 }
 
 var _ runtime.Registry = (*PostHandler)(nil)
@@ -23,16 +22,16 @@ var _ runtime.Registry = (*PostHandler)(nil)
 // RegisterService adds a service to this handler.
 func (h *PostHandler) RegisterService(s runtime.Service) {
 	prefix := fmt.Sprintf(
-		"/%s/%s/",
+		"%s.%s",
 		s.Package(),
 		s.Name(),
 	)
 
-	if h.serviceByPath == nil {
-		h.serviceByPath = map[string]runtime.Service{}
+	if h.services == nil {
+		h.services = map[string]runtime.Service{}
 	}
 
-	h.serviceByPath[prefix] = s
+	h.services[prefix] = s
 }
 
 // ServeHTTP handles an HTTP request.
@@ -46,7 +45,7 @@ func (h *PostHandler) RegisterService(s runtime.Service) {
 //
 // The request body is the RPC input message, which is a Protocol Buffers
 // message encoded in one of the following media types:
-//   - application/vnd.google.protobuf (native binary format, preferred)
+//   - application/vnd.google.protobuf (binary format, preferred)
 //   - application/x-protobuf (equivalent to application/vnd.google.protobuf)
 //   - application/json (as per google.golang.org/protobuf/encoding/protojson)
 //   - text/plain (as per google.golang.org/protobuf/encoding/prototext)
@@ -54,24 +53,23 @@ func (h *PostHandler) RegisterService(s runtime.Service) {
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
 func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		httpError(
-			w,
-			http.StatusNotImplemented,
-			"The request must use the POST HTTP method.",
-		)
-		return
-	}
-
-	servicePath, methodName := path.Split(r.URL.Path)
-
-	service, ok := h.serviceByPath[servicePath]
+	serviceName, methodName, ok := parsePath(r.URL.Path)
 	if !ok {
 		httpError(
 			w,
 			http.StatusNotFound,
-			"The server does not provide a service named '%s'.",
-			servicePath[1:],
+			"The request URI must follow the '/<package>/<service>/<method>' pattern.",
+		)
+		return
+	}
+
+	service, ok := h.services[serviceName]
+	if !ok {
+		httpError(
+			w,
+			http.StatusNotFound,
+			"The server does not provide the '%s' service.",
+			serviceName,
 		)
 		return
 	}
@@ -82,7 +80,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w,
 			http.StatusNotFound,
 			"The '%s' service does not contain an RPC method named '%s'.",
-			servicePath[1:],
+			serviceName,
 			methodName,
 		)
 		return
@@ -95,26 +93,41 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"An RPC method named '%s' exists, but is not supported by this server because it uses streaming inputs or outputs.",
 			methodName,
 		)
+		return
 	}
 
-	inputMediaType := r.Header.Get("Content-Type")
-	inputMediaType, _, err := mime.ParseMediaType(inputMediaType)
-	if err != nil {
+	if r.Method != http.MethodPost {
 		httpError(
 			w,
-			http.StatusBadRequest,
-			"The Content-Type header specifies an invalid media type.",
+			http.StatusNotImplemented,
+			"The HTTP method must be POST.",
 		)
 		return
 	}
 
-	unmarshaler, ok := unmarshalerByMediaType(inputMediaType)
+	unmarshaler, inputMediaType, ok, err := unmarshalerByNegotiation(r)
+	if err != nil {
+		httpError(
+			w,
+			http.StatusBadRequest,
+			"The Content-Type header is missing or invalid.",
+		)
+		return
+	}
 	if !ok {
-		httpErrorUnsupportedMedia(w, protoMediaTypes)
+		httpErrorUnsupportedMedia(w, inputMediaType, protoMediaTypes)
 		return
 	}
 
-	marshaler, outputMediaType, ok := marshalerByAcceptHeaders(r)
+	marshaler, outputMediaType, ok, err := marshalerByNegotiation(r)
+	if err != nil {
+		httpError(
+			w,
+			http.StatusBadRequest,
+			"The Accept header is invalid.",
+		)
+		return
+	}
 	if !ok {
 		httpErrorNotAcceptable(w, protoMediaTypes)
 		return
@@ -124,8 +137,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpError(
 			w,
-			http.StatusBadRequest,
-			"Unable to read request body.",
+			http.StatusInternalServerError,
+			"The request body could not be read.",
 		)
 		return
 	}
@@ -140,7 +153,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusBadRequest,
-			"Unable to parse input message from request body.",
+			"The RPC input message could not be unmarshaled from the request body.",
 		)
 		return
 	}
@@ -161,7 +174,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusInternalServerError,
-			"Unable to marshal the RPC output message.",
+			"The RPC output message could not be marshaled to the response body.",
 		)
 		return
 	}
@@ -171,4 +184,49 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	_, _ = w.Write(data)
+}
+
+// parsePath parses the URI path p and returns the names of the service
+// and method that it maps to.
+func parsePath(p string) (service, method string, ok bool) {
+	pkg, p, ok := nextPathSegment(p)
+	if !ok {
+		return "", "", false
+	}
+
+	service, p, ok = nextPathSegment(p)
+	if !ok {
+		return "", "", false
+	}
+
+	method, p, ok = nextPathSegment(p)
+	if !ok {
+		return "", "", false
+	}
+
+	// ensure there are no more segments
+	_, p, ok = nextPathSegment(p)
+	if !ok {
+		return pkg + "." + service, method, true
+	}
+
+	return "", "", false
+}
+
+// nextPathSegment returns the next segment of the path p.
+func nextPathSegment(p string) (seg, rest string, ok bool) {
+	if p == "" {
+		return "", "", false
+	}
+
+	p = p[1:] // trim leading slash
+	if p == "" {
+		return "", "", false
+	}
+
+	if i := strings.IndexByte(p, '/'); i != -1 {
+		return p[:i], p[i:], true
+	}
+
+	return p, "", true
 }
