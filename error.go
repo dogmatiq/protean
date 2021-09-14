@@ -11,36 +11,6 @@ import (
 // error.
 type ErrorCode struct{ code int32 }
 
-func (c ErrorCode) String() string {
-	switch c {
-	case ErrorCodeInvalidInput:
-		return "invalid input"
-	case ErrorCodeUnauthenticated:
-		return "unauthenticated"
-	case ErrorCodePermissionDenied:
-		return "permission denied"
-	case ErrorCodeNotFound:
-		return "not found"
-	case ErrorCodeAlreadyExists:
-		return "already exists"
-	case ErrorCodeResourceExhausted:
-		return "resource exhausted"
-	case ErrorCodeFailedPrecondition:
-		return "failed precondition"
-	case ErrorCodeAborted:
-		return "aborted"
-	case ErrorCodeUnavailable:
-		return "unavailable"
-	case ErrorCodeUnimplemented:
-		return "unimplemented"
-	}
-
-	return strconv.FormatInt(
-		int64(c.code),
-		10,
-	)
-}
-
 var (
 	// ErrorCodeInvalidInput is an error code that indicates that the input
 	// message to the RPC method is invalid according to some
@@ -121,6 +91,36 @@ func CustomErrorCode(c int32) ErrorCode {
 	}
 
 	return ErrorCode{c}
+}
+
+func (c ErrorCode) String() string {
+	switch c {
+	case ErrorCodeInvalidInput:
+		return "invalid input"
+	case ErrorCodeUnauthenticated:
+		return "unauthenticated"
+	case ErrorCodePermissionDenied:
+		return "permission denied"
+	case ErrorCodeNotFound:
+		return "not found"
+	case ErrorCodeAlreadyExists:
+		return "already exists"
+	case ErrorCodeResourceExhausted:
+		return "resource exhausted"
+	case ErrorCodeFailedPrecondition:
+		return "failed precondition"
+	case ErrorCodeAborted:
+		return "aborted"
+	case ErrorCodeUnavailable:
+		return "unavailable"
+	case ErrorCodeUnimplemented:
+		return "unimplemented"
+	}
+
+	return strconv.FormatInt(
+		int64(c.code),
+		10,
+	)
 }
 
 // Error is an error produced by an RPC server that is intended to be received
