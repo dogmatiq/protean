@@ -205,7 +205,7 @@ func parsePath(p string) (service, method string, ok bool) {
 	}
 
 	// ensure there are no more segments
-	_, p, ok = nextPathSegment(p)
+	_, _, ok = nextPathSegment(p)
 	if !ok {
 		return pkg + "." + service, method, true
 	}

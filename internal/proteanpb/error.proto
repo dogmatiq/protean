@@ -1,0 +1,17 @@
+syntax = "proto3";
+package protean.v1;
+
+option go_package = "github.com/dogmatiq/protean/internal/proteanpb";
+
+import "google/protobuf/any.proto";
+
+// Error is the message used to transfer information about an RPC error to a
+// client.
+//
+// When serialized using the protojson package it conforms to the structure of a
+// JSON-RPC v2 error object. See https://www.jsonrpc.org/specification#error_object.
+message Error {
+  int32 code = 1;
+  string message = 2;
+  google.protobuf.Any data = 3;
+}
