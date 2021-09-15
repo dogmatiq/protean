@@ -3,6 +3,7 @@ package protean
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"google.golang.org/protobuf/proto"
@@ -270,10 +271,13 @@ func (e *Error) UnmarshalText(data []byte) error {
 func (e Error) Error() string {
 	if e.details != nil {
 		return fmt.Sprintf(
-			"%s: %s (%s)",
+			"%s [%s]: %s",
 			e.code,
+			strings.TrimPrefix(
+				e.details.GetTypeUrl(),
+				"type.googleapis.com/",
+			),
 			e.message,
-			proto.MessageName(e.details),
 		)
 	}
 
