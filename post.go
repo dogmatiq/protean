@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
+	"github.com/dogmatiq/protean/internal/protomime"
 	"github.com/dogmatiq/protean/runtime"
 	"google.golang.org/protobuf/proto"
 )
@@ -144,7 +145,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				inputMediaType,
 			).WithDetails(
 				&proteanpb.SupportedMediaTypes{
-					MediaTypes: protoMediaTypes,
+					MediaTypes: protomime.MediaTypes,
 				},
 			),
 		)
@@ -172,7 +173,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"The client does not accept any of the media-types supported by the server.",
 			).WithDetails(
 				&proteanpb.SupportedMediaTypes{
-					MediaTypes: protoMediaTypes,
+					MediaTypes: protomime.MediaTypes,
 				},
 			),
 		)

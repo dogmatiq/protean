@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
+	"github.com/dogmatiq/protean/internal/protomime"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -243,7 +244,7 @@ func (e Error) Details() (details proto.Message, ok bool, err error) {
 
 // MarshalText marshals the error to its Protocol Buffers text representation.
 func (e Error) MarshalText() ([]byte, error) {
-	return textMarshaler.Marshal(
+	return protomime.TextMarshaler.Marshal(
 		&proteanpb.Error{
 			Code:    e.code.n,
 			Message: e.message,
@@ -257,7 +258,7 @@ func (e Error) MarshalText() ([]byte, error) {
 func (e *Error) UnmarshalText(data []byte) error {
 	var pb proteanpb.Error
 
-	if err := textUnmarshaler.Unmarshal(data, &pb); err != nil {
+	if err := protomime.TextUnmarshaler.Unmarshal(data, &pb); err != nil {
 		return err
 	}
 
