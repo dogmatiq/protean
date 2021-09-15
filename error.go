@@ -9,16 +9,19 @@ import (
 
 // ErrorCode is a numeric code that identifies the general class of an RPC
 // error.
-type ErrorCode struct{ code int32 }
+type ErrorCode struct{ n int32 }
 
 var (
-	// ErrorCodeInvalidInput is an error code that indicates that the input
-	// message to the RPC method is invalid according to some
-	// application-defined rules.
+	// ErrorCodeUnknown is an error code used when no information is available
+	// about the error.
+	ErrorCodeUnknown = ErrorCode{0}
+
+	// ErrorCodeInvalidInput indicates that the input message to the RPC method
+	// is invalid according to some application-defined rules.
 	//
-	// This differs from ErrorCodeFailedPrecondition in that
-	// ErrorCodeInvalidInput indicates input that is problematic regardless of
-	// the state of the application.
+	// ErrorCodeInvalidInput means the input is inherently problematic.
+	// ErrorCodeFailedPrecondition is the appropriate code to use if the input
+	// is only invalid due to the current state of the application.
 	ErrorCodeInvalidInput = ErrorCode{-1}
 
 	// ErrorCodeUnauthenticated indicates that the client has attempted to
@@ -26,27 +29,27 @@ var (
 	// authentication credentials have not been provided.
 	ErrorCodeUnauthenticated = ErrorCode{-2}
 
-	// ErrorCodePermissionDenied is an error code that indicates that the caller
-	// does not have permission to perform some action.
+	// ErrorCodePermissionDenied indicates that the caller does not have
+	// permission to perform some action.
 	//
 	// It differs from ErrorCodeUnauthenticated, which indicates that valid
 	// credentials have not been supplied at all.
 	ErrorCodePermissionDenied = ErrorCode{-3}
 
-	// ErrorCodeNotFound is an error code that indicates that the client has
-	// requested some entity that was not found.
+	// ErrorCodeNotFound indicates that the client has requested some entity
+	// that was not found.
 	ErrorCodeNotFound = ErrorCode{-4}
 
-	// ErrorCodeAlreadyExists is an error code that indicates that client has
-	// attempt to create some entity that already exists.
+	// ErrorCodeAlreadyExists indicates that client has attempted to create some
+	// entity that already exists.
 	ErrorCodeAlreadyExists = ErrorCode{-5}
 
-	// ErrorCodeResourceExhausted is an error code that indicates that some
-	// resource has been exhausted, such as a rate limit.
+	// ErrorCodeResourceExhausted indicates that some resource has been
+	// exhausted, such as a rate limit.
 	ErrorCodeResourceExhausted = ErrorCode{-6}
 
-	// ErrorCodeFailedPrecondition is an error code that indicates the
-	// application is not in the required state to perform some action.
+	// ErrorCodeFailedPrecondition indicates the application is not in the
+	// required state to perform some action.
 	//
 	// The client should not retry until the application state has been
 	// explicitly changed.
@@ -56,21 +59,22 @@ var (
 	// level, such as by beginning some business process again.
 	ErrorCodeFailedPrecondition = ErrorCode{-7}
 
-	// ErrorCodeAborted is an error code that indicates some action was aborted.
+	// ErrorCodeAborted indicates some action was aborted.
 	//
 	// The client may retry the operation by restarting whatever higher level
 	// process it belongs to, but should not simply re-send the same RPC
 	// request.
 	ErrorCodeAborted = ErrorCode{-8}
 
-	// ErrorCodeUnavailable is an error code that indicates that the server is
-	// temporarily unable to fulfill a request.
+	// ErrorCodeUnavailable indicates that the server is temporarily unable to
+	// fulfill a request.
 	//
-	// The client may safely retry the RPC call by re-sending the request.
+	// The client may safely retry the RPC call by re-sending the request,
+	// typically after some delay.
 	ErrorCodeUnavailable = ErrorCode{-9}
 
-	// ErrorCodeUnimplemented is an error code that indicates some RPC method is
-	// not implemented or otherwise unsupported by the server.
+	// ErrorCodeUnimplemented indicates an RPC method is not implemented or
+	// otherwise unsupported by the server.
 	ErrorCodeUnimplemented = ErrorCode{-10}
 )
 
@@ -80,7 +84,7 @@ var (
 // positive integer.
 //
 // Error codes should be used to organize related errors into broad categories
-// based on their general meaning. This allows RPC clients handle the error
+// based on their general meaning. This allows RPC clients to handle the error
 // without being able to identify the specific cause.
 //
 // Where possible, server implementations should favour using the pre-defined
@@ -95,6 +99,8 @@ func CustomErrorCode(c int32) ErrorCode {
 
 func (c ErrorCode) String() string {
 	switch c {
+	case ErrorCodeUnknown:
+		return "unknown"
 	case ErrorCodeInvalidInput:
 		return "invalid input"
 	case ErrorCodeUnauthenticated:
@@ -118,7 +124,7 @@ func (c ErrorCode) String() string {
 	}
 
 	return strconv.FormatInt(
-		int64(c.code),
+		int64(c.n),
 		10,
 	)
 }
@@ -136,7 +142,7 @@ type Error struct {
 	cause   error
 }
 
-// NewError returns an error that will be returned the client.
+// NewError returns an error that will be sent from the server to the client.
 //
 // c is the error code that best describes the error.
 //
@@ -144,13 +150,9 @@ type Error struct {
 // format and args.
 //
 // The error message should be understood by technical users that maintain or
-// operate the software making the RPC request. These people are typically NOT
+// operate the software making the RPC request. These people are typically not
 // the end-users of the software.
 func NewError(c ErrorCode, format string, args ...interface{}) Error {
-	if c.code == 0 {
-		panic("invalid error code")
-	}
-
 	return Error{
 		code:    c,
 		message: fmt.Sprintf(format, args...),
@@ -158,7 +160,7 @@ func NewError(c ErrorCode, format string, args ...interface{}) Error {
 }
 
 // WithDetails returns a copy of e that includes some application-defined
-// details about the error.
+// information about the error.
 //
 // These details provide more specific information than can be conveyed by the
 // error code.
@@ -166,10 +168,10 @@ func NewError(c ErrorCode, format string, args ...interface{}) Error {
 // It is best practice to define a distinct Protocol Buffers message type for
 // each error that the client is expected to handle in some unique way.
 //
-// The server should avoid including human readable messages within the details
-// value. Instead, include key properties about the error that the client can
-// use to present information about the error to the user in whatever language
-// or user interface may be appropriate.
+// The server should avoid including human-readable messages within the details
+// value. Instead, include key information about the error that the client can
+// use to notify the end-user about the error in whatever language or user
+// interface may be appropriate.
 func (e Error) WithDetails(d proto.Message) Error {
 	if e.details != nil {
 		panic("error details have already been provided")
@@ -200,8 +202,8 @@ func (e Error) WithCause(err error) Error {
 // Code returns the error's code.
 //
 // Clients should use the code to decide how best to handle the error if no
-// better determination can be made by examining the error's
-// application-defined details value.
+// better determination can be made by examining the error's application-defined
+// details value.
 func (e Error) Code() ErrorCode {
 	return e.code
 }
@@ -214,10 +216,10 @@ func (e Error) Message() string {
 	return e.message
 }
 
-// Details returns the application-defined details value for this error.
+// Details returns application-defined information about this error.
 //
-// The client may use information in the details value to present information
-// about the error the end-users.
+// The client may use this information to notify the end-user about the error in
+// whatever language or user interface may be appropriate.
 //
 // ok is false if no details were provided.
 func (e Error) Details() (details proto.Message, ok bool) {
