@@ -5,52 +5,54 @@ import (
 	"net/http"
 )
 
-// httpError writes an error response to w in plain text format.
+// httpError information aboubt an HTTP error to w.
 func httpError(
 	w http.ResponseWriter,
 	status int,
-	format string,
-	args ...interface{},
+	responseErr Error,
 ) {
+	data, err := responseErr.MarshalText()
+	if err != nil {
+		// The proteanpb.Error value itself can not be marshaled. This can only
+		// fail if we've misconfigured the marshaler we're using (which are
+		// hardcoded into this library), or the server is attempting to use the
+		// "version 1" Go Protocol Buffers library, which is not supported.
+		panic(fmt.Sprintf("unable to marshal error: %s", err))
+	}
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
-
-	fmt.Fprintf(w, "%d %s\n\n", status, http.StatusText(status))
-	fmt.Fprintf(w, format+"\n", args...)
+	_, _ = w.Write(data)
 }
 
-// httpErrorUnsupportedMedia writes an HTTP 415 "Unsupported Media Type" error
-// to w in plain text format.
-func httpErrorUnsupportedMedia(
-	w http.ResponseWriter,
-	mediaType string,
-	acceptable []string,
-) {
-	httpError(
-		w,
-		http.StatusUnsupportedMediaType,
-		"The server does not support the '%s' media-type supplied by the client.",
-		mediaType,
-	)
-
-	fmt.Fprintln(w, "\nThe supported types are, in order of preference:")
-	for _, t := range acceptable {
-		fmt.Fprintf(w, "- %s\n", t)
+// httpStatusFromErrorCode returns the default HTTP status to send when an error
+// with the given code occurs.
+func httpStatusFromErrorCode(c ErrorCode) int {
+	switch c {
+	case ErrorCodeUnknown:
+		return http.StatusInternalServerError
+	case ErrorCodeInvalidInput:
+		return http.StatusBadRequest
+	case ErrorCodeUnauthenticated:
+		return http.StatusUnauthorized
+	case ErrorCodePermissionDenied:
+		return http.StatusForbidden
+	case ErrorCodeNotFound:
+		return http.StatusNotFound
+	case ErrorCodeAlreadyExists:
+		return http.StatusConflict
+	case ErrorCodeResourceExhausted:
+		return http.StatusTooManyRequests
+	case ErrorCodeFailedPrecondition:
+		return http.StatusBadRequest
+	case ErrorCodeAborted:
+		return http.StatusConflict
+	case ErrorCodeUnavailable:
+		return http.StatusServiceUnavailable
+	case ErrorCodeNotImplemented:
+		return http.StatusNotImplemented
 	}
-}
 
-// httpErrorNotAcceptable writes an HTTP 406 "Not Acceptable" error to w in
-// plain text format.
-func httpErrorNotAcceptable(w http.ResponseWriter, acceptable []string) {
-	httpError(
-		w,
-		http.StatusNotAcceptable,
-		"The client does not accept any of the media-types supported by the server.",
-	)
-
-	fmt.Fprintln(w, "\nThe supported types are, in order of preference:")
-	for _, t := range acceptable {
-		fmt.Fprintf(w, "- %s\n", t)
-	}
+	return http.StatusInternalServerError
 }

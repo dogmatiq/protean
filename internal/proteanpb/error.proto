@@ -15,3 +15,10 @@ message Error {
   string message = 2;
   google.protobuf.Any data = 3;
 }
+
+// SupportedMediaTypes is a list of media types supported by the server, in
+// order of preference.
+message SupportedMediaTypes {
+  repeated string media_types = 1;
+}
+

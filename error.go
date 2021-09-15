@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/dogmatiq/protean/internal/proteanpb"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ErrorCode is a numeric code that identifies the general class of an RPC
@@ -73,9 +75,9 @@ var (
 	// typically after some delay.
 	ErrorCodeUnavailable = ErrorCode{-9}
 
-	// ErrorCodeUnimplemented indicates an RPC method is not implemented or
+	// ErrorCodeNotImplemented indicates an RPC method is not implemented or
 	// otherwise unsupported by the server.
-	ErrorCodeUnimplemented = ErrorCode{-10}
+	ErrorCodeNotImplemented = ErrorCode{-10}
 )
 
 // CustomErrorCode returns a new application-defined error code.
@@ -119,8 +121,8 @@ func (c ErrorCode) String() string {
 		return "aborted"
 	case ErrorCodeUnavailable:
 		return "unavailable"
-	case ErrorCodeUnimplemented:
-		return "unimplemented"
+	case ErrorCodeNotImplemented:
+		return "not implemented"
 	}
 
 	return strconv.FormatInt(
@@ -138,7 +140,7 @@ func (c ErrorCode) String() string {
 type Error struct {
 	code    ErrorCode
 	message string
-	details proto.Message
+	details *anypb.Any
 	cause   error
 }
 
@@ -177,7 +179,11 @@ func (e Error) WithDetails(d proto.Message) Error {
 		panic("error details have already been provided")
 	}
 
-	e.details = d
+	e.details = &anypb.Any{}
+
+	if err := e.details.MarshalFrom(d); err != nil {
+		panic(err)
+	}
 
 	return e
 }
@@ -221,9 +227,44 @@ func (e Error) Message() string {
 // The client may use this information to notify the end-user about the error in
 // whatever language or user interface may be appropriate.
 //
-// ok is false if no details were provided.
-func (e Error) Details() (details proto.Message, ok bool) {
-	return e.details, e.details != nil
+// It returns an error if the details can not be unmarshaled.
+//
+// ok is true if error details are present in the error, even if an error
+// occurs.
+func (e Error) Details() (details proto.Message, ok bool, err error) {
+	if e.details == nil {
+		return nil, false, nil
+	}
+
+	d, err := e.details.UnmarshalNew()
+	return d, true, err
+}
+
+// MarshalText marshals the error to its Protocol Buffers text representation.
+func (e Error) MarshalText() ([]byte, error) {
+	return textMarshaler.Marshal(
+		&proteanpb.Error{
+			Code:    e.code.n,
+			Message: e.message,
+			Data:    e.details,
+		},
+	)
+}
+
+// UnmarshalText unmarshals an error from its Protocol Buffers text
+// representation.
+func (e *Error) UnmarshalText(data []byte) error {
+	var pb proteanpb.Error
+
+	if err := textUnmarshaler.Unmarshal(data, &pb); err != nil {
+		return err
+	}
+
+	e.code = ErrorCode{pb.GetCode()}
+	e.message = pb.GetMessage()
+	e.details = pb.GetData()
+
+	return nil
 }
 
 func (e Error) Error() string {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/dogmatiq/iago/iotest"
 	. "github.com/dogmatiq/protean"
+	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/testservice"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -139,11 +140,15 @@ var _ = Describe("type PostHandler", func() {
 				It("it reponds with an HTTP '500 Internal Server Error' status", func() {
 					handler.ServeHTTP(response, request)
 
-					Expect(response).To(HaveHTTPStatus(http.StatusInternalServerError))
-					Expect(response).To(HaveHTTPBody(
-						"500 Internal Server Error\n\n" +
-							"The request body could not be read.\n",
-					))
+					expectError(
+						response,
+						http.StatusInternalServerError,
+						NewError(
+							ErrorCodeUnknown,
+							"The request body could not be read.",
+						),
+					)
+
 					Expect(invoked).To(BeFalse())
 				})
 			})
@@ -157,11 +162,15 @@ var _ = Describe("type PostHandler", func() {
 				It("it reponds with an HTTP '400 Bad Request' status", func() {
 					handler.ServeHTTP(response, request)
 
-					Expect(response).To(HaveHTTPStatus(http.StatusBadRequest))
-					Expect(response).To(HaveHTTPBody(
-						"400 Bad Request\n\n" +
-							"The RPC input message could not be unmarshaled from the request body.\n",
-					))
+					expectError(
+						response,
+						http.StatusBadRequest,
+						NewError(
+							ErrorCodeUnknown,
+							"The RPC input message could not be unmarshaled from the request body.",
+						),
+					)
+
 					Expect(invoked).To(BeFalse())
 				})
 			})
@@ -279,16 +288,24 @@ var _ = Describe("type PostHandler", func() {
 				It("responds with an HTTP '406 Not Accepted' status", func() {
 					handler.ServeHTTP(response, request)
 
-					Expect(response).To(HaveHTTPStatus(http.StatusNotAcceptable))
-					Expect(response).To(HaveHTTPBody(
-						"406 Not Acceptable\n\n" +
-							"The client does not accept any of the media-types supported by the server.\n\n" +
-							"The supported types are, in order of preference:\n" +
-							"- application/vnd.google.protobuf\n" +
-							"- application/x-protobuf\n" +
-							"- application/json\n" +
-							"- text/plain\n",
-					))
+					expectError(
+						response,
+						http.StatusNotAcceptable,
+						NewError(
+							ErrorCodeUnknown,
+							"The client does not accept any of the media-types supported by the server.",
+						).WithDetails(
+							&proteanpb.SupportedMediaTypes{
+								MediaTypes: []string{
+									"application/vnd.google.protobuf",
+									"application/x-protobuf",
+									"application/json",
+									"text/plain",
+								},
+							},
+						),
+					)
+
 					Expect(invoked).To(BeFalse())
 				})
 			})
@@ -301,45 +318,56 @@ var _ = Describe("type PostHandler", func() {
 				It("responds with an HTTP '400 Bad Request' status", func() {
 					handler.ServeHTTP(response, request)
 
-					Expect(response).To(HaveHTTPStatus(http.StatusBadRequest))
-					Expect(response).To(HaveHTTPBody(
-						"400 Bad Request\n\n" +
-							"The Accept header is invalid.\n",
-					))
+					expectError(
+						response,
+						http.StatusBadRequest,
+						NewError(
+							ErrorCodeUnknown,
+							"The Accept header is invalid.",
+						),
+					)
+
 					Expect(invoked).To(BeFalse())
 				})
 			})
 
 			When("the output message can not be marshaled", func() {
-				It("it reponds with an HTTP '500 Internal Server Error' status ", func() {
+				BeforeEach(func() {
 					output.Data = "\xc3\x28" // invalid UTF-8
+				})
 
+				It("it reponds with an HTTP '500 Internal Server Error' status ", func() {
 					handler.ServeHTTP(response, request)
 
-					Expect(response).To(HaveHTTPStatus(http.StatusInternalServerError))
-					Expect(response).To(HaveHTTPBody(
-						"500 Internal Server Error\n\n" +
-							"The RPC output message could not be marshaled to the response body.\n",
-					))
+					expectError(
+						response,
+						http.StatusInternalServerError,
+						NewError(
+							ErrorCodeUnknown,
+							"The RPC output message could not be marshaled to the response body.",
+						),
+					)
 				})
 			})
 		})
 
 		When("the URI path does not refer to a known RPC method", func() {
 			DescribeTable(
-				"it responds with an 'HTTP 404 Not Found' status",
+				"it responds with an HTTP '404 Not Found' status",
 				func(path, message string) {
 					request.URL.Path = path
 
 					handler.ServeHTTP(response, request)
 
-					Expect(response).To(HaveHTTPStatus(http.StatusNotFound))
-					Expect(response).To(HaveHTTPBody(
-						fmt.Sprintf(
-							"404 Not Found\n\n%s\n",
+					expectError(
+						response,
+						http.StatusNotFound,
+						NewError(
+							ErrorCodeNotFound,
 							message,
 						),
-					))
+					)
+
 					Expect(invoked).To(BeFalse())
 				},
 				Entry(
@@ -362,7 +390,6 @@ var _ = Describe("type PostHandler", func() {
 					"/package/Service/Method/unknown",
 					"The request URI must follow the '/<package>/<service>/<method>' pattern.",
 				),
-
 				Entry(
 					"unknown service",
 					"/package/Service/Method",
@@ -373,21 +400,42 @@ var _ = Describe("type PostHandler", func() {
 					"/protean.test/TestService/Method",
 					"The 'protean.test.TestService' service does not contain an RPC method named 'Method'.",
 				),
+			)
+		})
 
+		When("the URI path refers to a streaming RPC method", func() {
+			DescribeTable(
+				"it responds with an HTTP '501 Not Found' status",
+				func(path, message string) {
+					request.URL.Path = path
+
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						http.StatusNotImplemented,
+						NewError(
+							ErrorCodeNotImplemented,
+							message,
+						),
+					)
+
+					Expect(invoked).To(BeFalse())
+				},
 				Entry(
 					"client streaming method",
 					"/protean.test/TestService/ClientStream",
-					"An RPC method named 'ClientStream' exists, but is not supported by this server because it uses streaming inputs or outputs.",
+					"The 'protean.test.TestService' service does contain an RPC method named 'ClientStream', but is not supported by this server because it uses streaming inputs or outputs.",
 				),
 				Entry(
 					"server streaming method",
 					"/protean.test/TestService/ServerStream",
-					"An RPC method named 'ServerStream' exists, but is not supported by this server because it uses streaming inputs or outputs.",
+					"The 'protean.test.TestService' service does contain an RPC method named 'ServerStream', but is not supported by this server because it uses streaming inputs or outputs.",
 				),
 				Entry(
 					"bidirectional streaming method",
 					"/protean.test/TestService/BidirectionalStream",
-					"An RPC method named 'BidirectionalStream' exists, but is not supported by this server because it uses streaming inputs or outputs.",
+					"The 'protean.test.TestService' service does contain an RPC method named 'BidirectionalStream', but is not supported by this server because it uses streaming inputs or outputs.",
 				),
 			)
 		})
@@ -397,14 +445,18 @@ var _ = Describe("type PostHandler", func() {
 				request.Method = http.MethodGet
 			})
 
-			It("responds with an 'HTTP 501 Not Implemented' status", func() {
+			It("responds with an HTTP '501 Not Implemented' status", func() {
 				handler.ServeHTTP(response, request)
 
-				Expect(response).To(HaveHTTPStatus(http.StatusNotImplemented))
-				Expect(response).To(HaveHTTPBody(
-					"501 Not Implemented\n\n" +
-						"The HTTP method must be POST.\n",
-				))
+				expectError(
+					response,
+					http.StatusNotImplemented,
+					NewError(
+						ErrorCodeNotImplemented,
+						"The HTTP method must be POST.",
+					),
+				)
+
 				Expect(invoked).To(BeFalse())
 			})
 		})
@@ -417,11 +469,15 @@ var _ = Describe("type PostHandler", func() {
 
 					handler.ServeHTTP(response, request)
 
-					Expect(response).To(HaveHTTPStatus(http.StatusBadRequest))
-					Expect(response).To(HaveHTTPBody(
-						"400 Bad Request\n\n" +
-							"The Content-Type header is missing or invalid.\n",
-					))
+					expectError(
+						response,
+						http.StatusBadRequest,
+						NewError(
+							ErrorCodeUnknown,
+							"The Content-Type header is missing or invalid.",
+						),
+					)
+
 					Expect(invoked).To(BeFalse())
 				},
 				Entry("empty content type", ""),
@@ -437,18 +493,56 @@ var _ = Describe("type PostHandler", func() {
 			It("responds with an HTTP '415 Unsupported Media Type' status", func() {
 				handler.ServeHTTP(response, request)
 
-				Expect(response).To(HaveHTTPStatus(http.StatusUnsupportedMediaType))
-				Expect(response).To(HaveHTTPBody(
-					"415 Unsupported Media Type\n\n" +
-						"The server does not support the 'text/xml' media-type supplied by the client.\n\n" +
-						"The supported types are, in order of preference:\n" +
-						"- application/vnd.google.protobuf\n" +
-						"- application/x-protobuf\n" +
-						"- application/json\n" +
-						"- text/plain\n",
-				))
+				expectError(
+					response,
+					http.StatusUnsupportedMediaType,
+					NewError(
+						ErrorCodeUnknown,
+						"The server does not support the 'text/xml' media-type supplied by the client.",
+					).WithDetails(
+						&proteanpb.SupportedMediaTypes{
+							MediaTypes: []string{
+								"application/vnd.google.protobuf",
+								"application/x-protobuf",
+								"application/json",
+								"text/plain",
+							},
+						},
+					),
+				)
+
 				Expect(invoked).To(BeFalse())
 			})
 		})
 	})
 })
+
+// expectError asserts that the response describes the expected error.
+func expectError(
+	response *httptest.ResponseRecorder,
+	status int,
+	expect Error,
+) {
+	Expect(response).To(HaveHTTPStatus(status))
+	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; charset=utf-8"))
+
+	data, err := io.ReadAll(response.Body)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	var actual Error
+	err = actual.UnmarshalText(data)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	Expect(actual.Code()).To(Equal(expect.Code()))
+	Expect(actual.Message()).To(Equal(expect.Message()))
+
+	expectDetails, ok, err := expect.Details()
+	Expect(err).ShouldNot(HaveOccurred())
+
+	if ok {
+		actualDetails, ok, err := actual.Details()
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(ok).To(BeTrue())
+		Expect(proto.Equal(expectDetails, actualDetails)).To(BeTrue(), "error details do not match")
+	}
+}
