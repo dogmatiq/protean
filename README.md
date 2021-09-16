@@ -9,8 +9,10 @@
 Protean is a framework for building RPC web services based on [Protocol Buffers
 service definitions](https://developers.google.com/protocol-buffers/docs/proto3#services).
 
-Protean is similar to [gRPC](https://grpc.io/) and draws inspiration from
-[Twirp](https://github.com/twitchtv/twirp).
+Protean is inspired by [Twirp](https://github.com/twitchtv/twirp) but has
+different goals. Specifically, Protean is intended to produce RPC services that
+can be consumed by browsers as well as other servers. Both Protean and Twirp are
+alternatives to [gRPC](https://grpc.io/).
 
 ## Getting Started
 
