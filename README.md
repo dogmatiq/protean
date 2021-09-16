@@ -19,7 +19,7 @@ alternatives to [gRPC](https://grpc.io/).
 To use Protean, you will need a working knowledge of [Protocol
 Buffers](https://grpc.io/docs/protoc-installation/), and [generating Go code from .proto files](https://developers.google.com/protocol-buffers/docs/reference/go-generated).
 
-Protean provides a `protoc` plugin called `protoc-gen-go-protean`. The latest
+Protean includes a `protoc` plugin called `protoc-gen-go-protean`. The latest
 version can be installed by running:
 
 ```
