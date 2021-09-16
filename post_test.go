@@ -13,6 +13,7 @@ import (
 	"github.com/dogmatiq/iago/iotest"
 	. "github.com/dogmatiq/protean"
 	"github.com/dogmatiq/protean/internal/proteanpb"
+	"github.com/dogmatiq/protean/internal/protomime"
 	"github.com/dogmatiq/protean/internal/testservice"
 	"github.com/dogmatiq/protean/rpcerror"
 	. "github.com/onsi/ginkgo"
@@ -530,8 +531,11 @@ func expectError(
 	data, err := io.ReadAll(response.Body)
 	Expect(err).ShouldNot(HaveOccurred())
 
-	var actual rpcerror.Error
-	err = actual.UnmarshalText(data)
+	var protoErr proteanpb.Error
+	err = protomime.TextUnmarshaler.Unmarshal(data, &protoErr)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	actual, err := rpcerror.FromProto(&protoErr)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	Expect(actual.Code()).To(Equal(expect.Code()))

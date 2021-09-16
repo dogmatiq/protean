@@ -102,6 +102,11 @@ func (c Code) IsCustom() bool {
 	return c.n > 0
 }
 
+// NumericValue returns the numeric value of the error code.
+func (c Code) NumericValue() int32 {
+	return c.n
+}
+
 func (c Code) String() string {
 	switch c {
 	case Unknown:

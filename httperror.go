@@ -1,9 +1,10 @@
 package protean
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/dogmatiq/protean/internal/proteanpb"
+	"github.com/dogmatiq/protean/internal/protomime"
 	"github.com/dogmatiq/protean/rpcerror"
 )
 
@@ -13,13 +14,14 @@ func httpError(
 	status int,
 	rpcErr rpcerror.Error,
 ) {
-	data, err := rpcErr.MarshalText()
+	var protoErr proteanpb.Error
+	if err := rpcerror.ToProto(rpcErr, &protoErr); err != nil {
+		panic(err)
+	}
+
+	data, err := protomime.TextMarshaler.Marshal(&protoErr)
 	if err != nil {
-		// The proteanpb.Error value itself can not be marshaled. This can only
-		// fail if we've misconfigured the marshaler we're using (which are
-		// hardcoded into this library), or the server is attempting to use the
-		// "version 1" Go Protocol Buffers library, which is not supported.
-		panic(fmt.Sprintf("unable to marshal error: %s", err))
+		panic(err)
 	}
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
