@@ -1,4 +1,0 @@
-# Ignore this file to avoid a circular dependency. It would normally be included
-# in GO_SOURCE_FILES, which is a prerequisite of building the
-# protoc-gen-go-protean binary, but that binary is required to build this file.
-service_protean.pb.go

@@ -26,9 +26,11 @@ Protean is similar to [gRPC](https://grpc.io/) and draws inspiration from
 - Produce [`http.Handler`](https://pkg.go.dev/net/http#Handler) implementations
   that work with Go's standard web server.
 - Co-exist with gRPC services built from the same Protocol Buffers definitions.
+- HTTP/1.1 and HTTP/2 support.
 
 ## Non-goals
 
 - Hiding the fact that the server is RPC based.
 - Providing RESTful APIs, changing behavior based on HTTP methods.
 - Allowing fine-grained control over HTTP-specific behavior, such as setting headers.
+- Non-HTTP transports.

@@ -17,7 +17,7 @@ type Service struct {
 // implementation of this service with a registry.
 func (s *Service) ServiceRegisterFunc() string {
 	return fmt.Sprintf(
-		"ProteanRegister%sServer",
+		"RegisterProtean%s",
 		s.ServiceDesc.GetName(),
 	)
 }

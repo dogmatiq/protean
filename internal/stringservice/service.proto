@@ -1,0 +1,25 @@
+syntax = "proto3";
+package protean.string;
+
+option go_package = "github.com/dogmatiq/protean/internal/stringservice";
+
+// StringService is a service that performs basic string operations. 
+//
+// It is used in the example_test.go file in the root of the repository to
+// demonstrate how to implement a server and call RPC methods using a client.
+service StringService {
+  // ToUpper returns its input string in uppercase.
+  rpc ToUpper(ToUpperRequest) returns (ToUpperResponse);
+}
+
+// ToUpperRequest is the RPC input message for the StringService.ToUpper() RPC
+// method.
+message ToUpperRequest {
+  string original_string = 1;
+}
+
+// ToUpperResponse is the RPC output message for the StringService.ToUpper() RPC
+// method.
+message ToUpperResponse {
+  string uppercase_string = 1;
+}

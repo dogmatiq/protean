@@ -51,7 +51,7 @@ var _ = Describe("type Client", func() {
 			},
 		}
 
-		testservice.ProteanRegisterTestServiceServer(handler, service)
+		testservice.RegisterProteanTestService(handler, service)
 
 		server = httptest.NewServer(handler)
 

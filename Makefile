@@ -1,9 +1,12 @@
 PROTO_GRPC_FILES := # Disable GRPC generation
 
-# Note, this file depends on the protoc-gen-go-protean binary from this repo to
-# be build. It has been added to .gitignore so that it excluded from the
+# Note, these files depend on the protoc-gen-go-protean binary from this repo to
+# be built.
+#
+# They have been added to .gitignore so that they are excluded from the
 # GO_SOURCE_FILES variable, as otherwise it would create a circular dependency.
 GO_TEST_REQ += internal/testservice/service_protean.pb.go
+GO_TEST_REQ += internal/stringservice/service_protean.pb.go
 
 -include .makefiles/Makefile
 -include .makefiles/pkg/protobuf/v2/Makefile

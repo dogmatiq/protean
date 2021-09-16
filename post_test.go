@@ -80,7 +80,7 @@ var _ = Describe("type PostHandler", func() {
 
 		response = httptest.NewRecorder()
 
-		testservice.ProteanRegisterTestServiceServer(handler, service)
+		testservice.RegisterProteanTestService(handler, service)
 	})
 
 	AfterEach(func() {
