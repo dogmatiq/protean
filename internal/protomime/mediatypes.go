@@ -23,6 +23,17 @@ var TextMediaTypes = []string{
 	"text/plain",
 }
 
+// IsSupportedMediaType if the given media-type is supported.
+func IsSupportedMediaType(mediaType string) bool {
+	for _, x := range MediaTypes {
+		if x == mediaType {
+			return true
+		}
+	}
+
+	return false
+}
+
 // IsBinary returns true if the given media-type refers to the standard binary
 // Protocol Buffers encoding.
 func IsBinary(mediaType string) bool {
