@@ -4,6 +4,7 @@ import (
 	"errors"
 	"mime"
 	"net/http"
+	"strings"
 
 	"github.com/dogmatiq/protean/internal/protomime"
 	"github.com/elnormous/contenttype"
@@ -57,6 +58,13 @@ func marshalerByNegotiation(r *http.Request) (m protomime.Marshaler, mediaType s
 // marshaling protobuf messages, in the format consumed by the
 // github.com/elnormous/contenttype package.
 var protoAcceptMediaTypes []contenttype.MediaType
+
+// acceptPostHeader is the value to use for the Accept-Post header in HTTP
+// responses.
+var acceptPostHeader = strings.Join(
+	protomime.MediaTypes,
+	", ",
+)
 
 func init() {
 	for _, mediaType := range protomime.MediaTypes {

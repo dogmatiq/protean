@@ -103,6 +103,8 @@ var _ = Describe("type PostHandler", func() {
 						handler.ServeHTTP(response, request)
 
 						Expect(response).To(HaveHTTPStatus(http.StatusOK))
+						expectStandardHeaders(response)
+
 						Expect(invoked).To(BeTrue())
 					},
 					Entry("preferred media type", "application/vnd.google.protobuf"),
@@ -115,6 +117,8 @@ var _ = Describe("type PostHandler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
+					expectStandardHeaders(response)
+
 					Expect(invoked).To(BeTrue())
 				})
 			})
@@ -130,6 +134,8 @@ var _ = Describe("type PostHandler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
+					expectStandardHeaders(response)
+
 					Expect(invoked).To(BeTrue())
 				})
 			})
@@ -150,6 +156,8 @@ var _ = Describe("type PostHandler", func() {
 							"The request body could not be read.",
 						),
 					)
+
+					expectStandardHeaders(response)
 
 					Expect(invoked).To(BeFalse())
 				})
@@ -173,6 +181,8 @@ var _ = Describe("type PostHandler", func() {
 						),
 					)
 
+					expectStandardHeaders(response)
+
 					Expect(invoked).To(BeFalse())
 				})
 			})
@@ -189,6 +199,7 @@ var _ = Describe("type PostHandler", func() {
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
 					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json"))
+					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
 					Expect(err).ShouldNot(HaveOccurred())
@@ -217,6 +228,7 @@ var _ = Describe("type PostHandler", func() {
 
 						Expect(response).To(HaveHTTPStatus(http.StatusOK))
 						Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType))
+						expectStandardHeaders(response)
 
 						data, err := io.ReadAll(response.Body)
 						Expect(err).ShouldNot(HaveOccurred())
@@ -245,6 +257,7 @@ var _ = Describe("type PostHandler", func() {
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
 					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json"))
+					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
 					Expect(err).ShouldNot(HaveOccurred())
@@ -270,6 +283,7 @@ var _ = Describe("type PostHandler", func() {
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
 					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain"))
+					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
 					Expect(err).ShouldNot(HaveOccurred())
@@ -308,6 +322,8 @@ var _ = Describe("type PostHandler", func() {
 						),
 					)
 
+					expectStandardHeaders(response)
+
 					Expect(invoked).To(BeFalse())
 				})
 			})
@@ -329,6 +345,8 @@ var _ = Describe("type PostHandler", func() {
 						),
 					)
 
+					expectStandardHeaders(response)
+
 					Expect(invoked).To(BeFalse())
 				})
 			})
@@ -349,6 +367,8 @@ var _ = Describe("type PostHandler", func() {
 							"The RPC output message could not be marshaled to the response body.",
 						),
 					)
+
+					expectStandardHeaders(response)
 				})
 			})
 		})
@@ -368,6 +388,13 @@ var _ = Describe("type PostHandler", func() {
 							rpcerror.NotFound,
 							message,
 						),
+					)
+
+					Expect(
+						response.Header().Get("Accept-Post"),
+					).To(
+						HaveLen(0),
+						"Accept-Post header should not be provided when the request path does not refer to an RPC method",
 					)
 
 					Expect(invoked).To(BeFalse())
@@ -422,6 +449,13 @@ var _ = Describe("type PostHandler", func() {
 						),
 					)
 
+					Expect(
+						response.Header().Get("Accept-Post"),
+					).To(
+						HaveLen(0),
+						"Accept-Post header should not be provided when POST is not implemented at the request path",
+					)
+
 					Expect(invoked).To(BeFalse())
 				},
 				Entry(
@@ -459,6 +493,8 @@ var _ = Describe("type PostHandler", func() {
 					),
 				)
 
+				expectStandardHeaders(response)
+
 				Expect(invoked).To(BeFalse())
 			})
 		})
@@ -479,6 +515,8 @@ var _ = Describe("type PostHandler", func() {
 							"The Content-Type header is missing or invalid.",
 						),
 					)
+
+					expectStandardHeaders(response)
 
 					Expect(invoked).To(BeFalse())
 				},
@@ -513,11 +551,23 @@ var _ = Describe("type PostHandler", func() {
 					),
 				)
 
+				expectStandardHeaders(response)
+
 				Expect(invoked).To(BeFalse())
 			})
 		})
 	})
 })
+
+// expectStandardHeaders asserts that the response includes HTTP headers that
+// should always be set for a path that refers to a value RPC method.
+func expectStandardHeaders(
+	response *httptest.ResponseRecorder,
+) {
+	Expect(response).To(HaveHTTPHeaderWithValue("Cache-Control", "no-store"))
+	Expect(response).To(HaveHTTPHeaderWithValue("X-Content-Type-Options", "nosniff"))
+	Expect(response).To(HaveHTTPHeaderWithValue("Accept-Post", "application/vnd.google.protobuf, application/x-protobuf, application/json, text/plain"))
+}
 
 // expectError asserts that the response describes the expected error.
 func expectError(

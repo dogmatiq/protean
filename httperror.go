@@ -25,7 +25,6 @@ func httpError(
 	}
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	_, _ = w.Write(data)
 }

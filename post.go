@@ -56,6 +56,9 @@ func (h *PostHandler) RegisterService(s runtime.Service) {
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
 func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
 	serviceName, methodName, ok := parsePath(r.URL.Path)
 	if !ok {
 		httpError(
@@ -111,6 +114,10 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+
+	// Set the Accept-Post header only once we've verified that the requested
+	// method exists and is supported.
+	w.Header().Set("Accept-Post", acceptPostHeader)
 
 	if r.Method != http.MethodPost {
 		httpError(
@@ -247,10 +254,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Cache-Control", "no-store")
 	w.Header().Add("Content-Type", outputMediaType)
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
-	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
 }
