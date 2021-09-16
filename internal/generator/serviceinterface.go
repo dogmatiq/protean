@@ -59,7 +59,7 @@ func genServiceInterfaceMethods(s *scope.Service) ([]jen.Code, error) {
 // service interface.
 func genInterfaceMethodInputs(s *scope.Method) ([]jen.Code, error) {
 	params := []jen.Code{
-		jen.Qual("context", "Context"),
+		jen.Id("ctx").Qual("context", "Context"),
 	}
 
 	// Add the input message parameter.
@@ -72,12 +72,12 @@ func genInterfaceMethodInputs(s *scope.Method) ([]jen.Code, error) {
 		if s.MethodDesc.GetClientStreaming() {
 			params = append(
 				params,
-				jen.Op("<-").Chan().Op("*").Qual(pkgPath, typeName),
+				jen.Id("inputs").Op("<-").Chan().Op("*").Qual(pkgPath, typeName),
 			)
 		} else {
 			params = append(
 				params,
-				jen.Op("*").Qual(pkgPath, typeName),
+				jen.Id("in").Op("*").Qual(pkgPath, typeName),
 			)
 		}
 	}
@@ -91,7 +91,7 @@ func genInterfaceMethodInputs(s *scope.Method) ([]jen.Code, error) {
 
 		params = append(
 			params,
-			jen.Chan().Op("<-").Op("*").Qual(pkgPath, typeName),
+			jen.Id("outputs").Chan().Op("<-").Op("*").Qual(pkgPath, typeName),
 		)
 	}
 

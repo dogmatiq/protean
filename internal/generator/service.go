@@ -5,17 +5,30 @@ import (
 	"github.com/dogmatiq/protean/internal/generator/scope"
 )
 
-// appendService appends all generated code for an RPC service to the output.
-func appendService(code *jen.File, s *scope.Service) error {
+// appendServiceExported appends all exported (public API) generated code for an
+// RPC service to the output.
+func appendServiceExported(code *jen.File, s *scope.Service) error {
 	if err := appendServiceInterface(code, s); err != nil {
 		return err
 	}
 
 	appendServiceRegisterFunction(code, s)
+	appendClientConstructor(code, s)
+
+	return nil
+}
+
+// appendServiceUnexported appends all unexported generated code for an RPC
+// service to the output.
+func appendServiceUnexported(code *jen.File, s *scope.Service) error {
 	appendRuntimeServiceImpl(code, s)
 
 	for _, m := range s.ServiceDesc.GetMethod() {
 		appendMethod(code, s.EnterMethod(m))
+	}
+
+	if err := appendClientImpl(code, s); err != nil {
+		return err
 	}
 
 	return nil
@@ -133,18 +146,4 @@ func appendRuntimeServiceImpl(code *jen.File, s *scope.Service) {
 				jen.False(),
 			),
 		)
-
-	// out.Line()
-	// out.Func().
-	// 	Params(recv).
-	// 	Id("MethodByURL").
-	// 	Params(
-	// 		jen.Id("u").Op("*").Qual("net/url", "URL"),
-	// 	).
-	// 	Params(
-	// 		jen.Qual(runtimePackage, "Method"),
-	// 		jen.Qual(runtimePackage, "Unmarshaler"),
-	// 		jen.Bool(),
-	// 	).
-	// 	Block()
 }

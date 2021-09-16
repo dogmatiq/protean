@@ -31,6 +31,24 @@ func (s *Service) ServiceInterface() string {
 	)
 }
 
+// ClientConstructor returns the name of the function that returns a new client
+// for this service.
+func (s *Service) ClientConstructor() string {
+	return fmt.Sprintf(
+		"NewProtean%sClient",
+		s.ServiceDesc.GetName(),
+	)
+}
+
+// ClientImpl returns the name of the struct that implements the client for this
+// service.
+func (s *Service) ClientImpl() string {
+	return fmt.Sprintf(
+		"proteanClient_%s",
+		s.ServiceDesc.GetName(),
+	)
+}
+
 // RuntimeServiceImpl returns the name of the runtime.Service implementation for
 // this service.
 func (s *Service) RuntimeServiceImpl() string {

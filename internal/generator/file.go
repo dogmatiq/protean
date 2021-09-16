@@ -28,7 +28,16 @@ func generateFile(
 	code.HeaderComment(fmt.Sprintf("// source: %s", s.FileDesc.GetName()))
 
 	for _, d := range s.FileDesc.GetService() {
-		if err := appendService(code, s.EnterService(d)); err != nil {
+		if err := appendServiceExported(code, s.EnterService(d)); err != nil {
+			return nil, err
+		}
+	}
+
+	code.Comment(strings.Repeat("-", 117))
+	code.Line()
+
+	for _, d := range s.FileDesc.GetService() {
+		if err := appendServiceUnexported(code, s.EnterService(d)); err != nil {
 			return nil, err
 		}
 	}
