@@ -17,10 +17,8 @@ import (
 // errors" (such as network timeouts, etc) which are unexpected and meaningless
 // within the context of the application's business domain.
 type Error struct {
-	code    Code
-	message string
-	details *anypb.Any
-	cause   error
+	proto *proteanpb.Error
+	cause error
 }
 
 // New returns an error that will be sent from the server to the client.
@@ -35,8 +33,24 @@ type Error struct {
 // the end-users of the software.
 func New(c Code, format string, args ...interface{}) Error {
 	return Error{
-		code:    c,
-		message: fmt.Sprintf(format, args...),
+		proto: &proteanpb.Error{
+			Code:    c.n,
+			Message: fmt.Sprintf(format, args...),
+		},
+	}
+}
+
+// ToProto returns the Protocol Buffers representation of an error.
+func ToProto(err Error) proto.Message {
+	return err.proto
+}
+
+// FromProto returns a new Error constructed from a Protocol Buffers
+// representation.
+func FromProto(m proto.Message) Error {
+	return Error{
+		m.(*proteanpb.Error),
+		nil,
 	}
 }
 
@@ -46,7 +60,7 @@ func New(c Code, format string, args ...interface{}) Error {
 // better determination can be made by examining the error's application-defined
 // details value.
 func (e Error) Code() Code {
-	return e.code
+	return Code{e.proto.Code}
 }
 
 // Message returns a human-readable description of the message.
@@ -54,7 +68,7 @@ func (e Error) Code() Code {
 // This message is intended for technical users that maintain or operate the
 // software making the RPC request, and should not be shown to end-users.
 func (e Error) Message() string {
-	return e.message
+	return e.proto.Message
 }
 
 // Details returns application-defined information about this error.
@@ -67,11 +81,11 @@ func (e Error) Message() string {
 // ok is true if error details are present in the error, even if an error
 // occurs.
 func (e Error) Details() (details proto.Message, ok bool, err error) {
-	if e.details == nil {
+	if e.proto.Data == nil {
 		return nil, false, nil
 	}
 
-	d, err := e.details.UnmarshalNew()
+	d, err := e.proto.Data.UnmarshalNew()
 	return d, true, err
 }
 
@@ -89,13 +103,13 @@ func (e Error) Details() (details proto.Message, ok bool, err error) {
 // use to notify the end-user about the error in whatever language or user
 // interface may be appropriate.
 func (e Error) WithDetails(d proto.Message) Error {
-	if e.details != nil {
+	if e.proto.Data != nil {
 		panic("error details have already been provided")
 	}
 
-	e.details = &anypb.Any{}
+	e.proto.Data = &anypb.Any{}
 
-	if err := e.details.MarshalFrom(d); err != nil {
+	if err := e.proto.Data.MarshalFrom(d); err != nil {
 		panic(err)
 	}
 
@@ -120,14 +134,9 @@ func (e Error) WithCause(err error) Error {
 }
 
 // MarshalText marshals the error to its Protocol Buffers text representation.
+//deprecated: use ToProto instead.
 func (e Error) MarshalText() ([]byte, error) {
-	return protomime.TextMarshaler.Marshal(
-		&proteanpb.Error{
-			Code:    e.code.n,
-			Message: e.message,
-			Data:    e.details,
-		},
-	)
+	return protomime.TextMarshaler.Marshal(e.proto)
 }
 
 // UnmarshalText unmarshals an error from its Protocol Buffers text
@@ -139,29 +148,36 @@ func (e *Error) UnmarshalText(data []byte) error {
 		return err
 	}
 
-	e.code = Code{pb.GetCode()}
-	e.message = pb.GetMessage()
-	e.details = pb.GetData()
+	e.proto = &pb
+	e.cause = nil
 
 	return nil
 }
 
 func (e Error) Error() string {
-	if e.details != nil {
+	code := e.Code()
+	message := e.Message()
+	if message == "" {
+		message = "<no message provided>"
+	}
+
+	if e.proto.Data == nil {
 		return fmt.Sprintf(
-			"%s [%s]: %s",
-			e.code,
-			strings.TrimPrefix(
-				e.details.GetTypeUrl(),
-				"type.googleapis.com/",
-			),
-			e.message,
+			"%s: %s",
+			code,
+			message,
 		)
 	}
 
+	detailsType := strings.TrimPrefix(
+		e.proto.Data.GetTypeUrl(),
+		"type.googleapis.com/",
+	)
+
 	return fmt.Sprintf(
-		"%s: %s",
-		e.code,
-		e.message,
+		"%s [%s]: %s",
+		code,
+		detailsType,
+		message,
 	)
 }
