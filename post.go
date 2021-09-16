@@ -9,6 +9,7 @@ import (
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
+	"github.com/dogmatiq/protean/rpcerror"
 	"github.com/dogmatiq/protean/runtime"
 	"google.golang.org/protobuf/proto"
 )
@@ -60,8 +61,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotFound,
-			NewError(
-				ErrorCodeNotFound,
+			rpcerror.New(
+				rpcerror.NotFound,
 				"The request URI must follow the '/<package>/<service>/<method>' pattern.",
 			),
 		)
@@ -73,8 +74,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotFound,
-			NewError(
-				ErrorCodeNotFound,
+			rpcerror.New(
+				rpcerror.NotFound,
 				"The server does not provide the '%s' service.",
 				serviceName,
 			),
@@ -87,8 +88,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotFound,
-			NewError(
-				ErrorCodeNotFound,
+			rpcerror.New(
+				rpcerror.NotFound,
 				"The '%s' service does not contain an RPC method named '%s'.",
 				serviceName,
 				methodName,
@@ -101,8 +102,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotImplemented,
-			NewError(
-				ErrorCodeNotImplemented,
+			rpcerror.New(
+				rpcerror.NotImplemented,
 				"The '%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs.",
 				serviceName,
 				methodName,
@@ -115,8 +116,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotImplemented,
-			NewError(
-				ErrorCodeNotImplemented,
+			rpcerror.New(
+				rpcerror.NotImplemented,
 				"The HTTP method must be POST.",
 			),
 		)
@@ -128,8 +129,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusBadRequest,
-			NewError(
-				ErrorCodeUnknown,
+			rpcerror.New(
+				rpcerror.Unknown,
 				"The Content-Type header is missing or invalid.",
 			),
 		)
@@ -139,8 +140,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusUnsupportedMediaType,
-			NewError(
-				ErrorCodeUnknown,
+			rpcerror.New(
+				rpcerror.Unknown,
 				"The server does not support the '%s' media-type supplied by the client.",
 				inputMediaType,
 			).WithDetails(
@@ -157,8 +158,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusBadRequest,
-			NewError(
-				ErrorCodeUnknown,
+			rpcerror.New(
+				rpcerror.Unknown,
 				"The Accept header is invalid.",
 			),
 		)
@@ -168,8 +169,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotAcceptable,
-			NewError(
-				ErrorCodeUnknown,
+			rpcerror.New(
+				rpcerror.Unknown,
 				"The client does not accept any of the media-types supported by the server.",
 			).WithDetails(
 				&proteanpb.SupportedMediaTypes{
@@ -185,8 +186,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusInternalServerError,
-			NewError(
-				ErrorCodeUnknown,
+			rpcerror.New(
+				rpcerror.Unknown,
 				"The request body could not be read.",
 			),
 		)
@@ -203,8 +204,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusBadRequest,
-			NewError(
-				ErrorCodeUnknown,
+			rpcerror.New(
+				rpcerror.Unknown,
 				"The RPC input message could not be unmarshaled from the request body.",
 			),
 		)
@@ -213,7 +214,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	out, _, err := call.Recv()
 	if err != nil {
-		if err, ok := err.(Error); ok {
+		if err, ok := err.(rpcerror.Error); ok {
 			httpError(
 				w,
 				httpStatusFromErrorCode(err.Code()),
@@ -223,8 +224,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			httpError(
 				w,
 				http.StatusInternalServerError,
-				NewError(
-					ErrorCodeUnknown,
+				rpcerror.New(
+					rpcerror.Unknown,
 					"The RPC method returned an unrecognized error.",
 				),
 			)
@@ -238,8 +239,8 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusInternalServerError,
-			NewError(
-				ErrorCodeUnknown,
+			rpcerror.New(
+				rpcerror.Unknown,
 				"The RPC output message could not be marshaled to the response body.",
 			),
 		)

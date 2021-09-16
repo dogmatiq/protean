@@ -3,15 +3,17 @@ package protean
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/dogmatiq/protean/rpcerror"
 )
 
 // httpError information aboubt an HTTP error to w.
 func httpError(
 	w http.ResponseWriter,
 	status int,
-	responseErr Error,
+	rpcErr rpcerror.Error,
 ) {
-	data, err := responseErr.MarshalText()
+	data, err := rpcErr.MarshalText()
 	if err != nil {
 		// The proteanpb.Error value itself can not be marshaled. This can only
 		// fail if we've misconfigured the marshaler we're using (which are
@@ -28,29 +30,29 @@ func httpError(
 
 // httpStatusFromErrorCode returns the default HTTP status to send when an error
 // with the given code occurs.
-func httpStatusFromErrorCode(c ErrorCode) int {
+func httpStatusFromErrorCode(c rpcerror.Code) int {
 	switch c {
-	case ErrorCodeUnknown:
+	case rpcerror.Unknown:
 		return http.StatusInternalServerError
-	case ErrorCodeInvalidInput:
+	case rpcerror.InvalidInput:
 		return http.StatusBadRequest
-	case ErrorCodeUnauthenticated:
+	case rpcerror.Unauthenticated:
 		return http.StatusUnauthorized
-	case ErrorCodePermissionDenied:
+	case rpcerror.PermissionDenied:
 		return http.StatusForbidden
-	case ErrorCodeNotFound:
+	case rpcerror.NotFound:
 		return http.StatusNotFound
-	case ErrorCodeAlreadyExists:
+	case rpcerror.AlreadyExists:
 		return http.StatusConflict
-	case ErrorCodeResourceExhausted:
+	case rpcerror.ResourceExhausted:
 		return http.StatusTooManyRequests
-	case ErrorCodeFailedPrecondition:
+	case rpcerror.FailedPrecondition:
 		return http.StatusBadRequest
-	case ErrorCodeAborted:
+	case rpcerror.Aborted:
 		return http.StatusConflict
-	case ErrorCodeUnavailable:
+	case rpcerror.Unavailable:
 		return http.StatusServiceUnavailable
-	case ErrorCodeNotImplemented:
+	case rpcerror.NotImplemented:
 		return http.StatusNotImplemented
 	}
 

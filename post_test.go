@@ -14,6 +14,7 @@ import (
 	. "github.com/dogmatiq/protean"
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/testservice"
+	"github.com/dogmatiq/protean/rpcerror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -143,8 +144,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						NewError(
-							ErrorCodeUnknown,
+						rpcerror.New(
+							rpcerror.Unknown,
 							"The request body could not be read.",
 						),
 					)
@@ -165,8 +166,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
-						NewError(
-							ErrorCodeUnknown,
+						rpcerror.New(
+							rpcerror.Unknown,
 							"The RPC input message could not be unmarshaled from the request body.",
 						),
 					)
@@ -291,8 +292,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusNotAcceptable,
-						NewError(
-							ErrorCodeUnknown,
+						rpcerror.New(
+							rpcerror.Unknown,
 							"The client does not accept any of the media-types supported by the server.",
 						).WithDetails(
 							&proteanpb.SupportedMediaTypes{
@@ -321,8 +322,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
-						NewError(
-							ErrorCodeUnknown,
+						rpcerror.New(
+							rpcerror.Unknown,
 							"The Accept header is invalid.",
 						),
 					)
@@ -342,8 +343,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						NewError(
-							ErrorCodeUnknown,
+						rpcerror.New(
+							rpcerror.Unknown,
 							"The RPC output message could not be marshaled to the response body.",
 						),
 					)
@@ -362,8 +363,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusNotFound,
-						NewError(
-							ErrorCodeNotFound,
+						rpcerror.New(
+							rpcerror.NotFound,
 							message,
 						),
 					)
@@ -414,8 +415,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusNotImplemented,
-						NewError(
-							ErrorCodeNotImplemented,
+						rpcerror.New(
+							rpcerror.NotImplemented,
 							message,
 						),
 					)
@@ -451,8 +452,8 @@ var _ = Describe("type PostHandler", func() {
 				expectError(
 					response,
 					http.StatusNotImplemented,
-					NewError(
-						ErrorCodeNotImplemented,
+					rpcerror.New(
+						rpcerror.NotImplemented,
 						"The HTTP method must be POST.",
 					),
 				)
@@ -472,8 +473,8 @@ var _ = Describe("type PostHandler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
-						NewError(
-							ErrorCodeUnknown,
+						rpcerror.New(
+							rpcerror.Unknown,
 							"The Content-Type header is missing or invalid.",
 						),
 					)
@@ -496,8 +497,8 @@ var _ = Describe("type PostHandler", func() {
 				expectError(
 					response,
 					http.StatusUnsupportedMediaType,
-					NewError(
-						ErrorCodeUnknown,
+					rpcerror.New(
+						rpcerror.Unknown,
 						"The server does not support the 'text/xml' media-type supplied by the client.",
 					).WithDetails(
 						&proteanpb.SupportedMediaTypes{
@@ -521,7 +522,7 @@ var _ = Describe("type PostHandler", func() {
 func expectError(
 	response *httptest.ResponseRecorder,
 	status int,
-	expect Error,
+	expect rpcerror.Error,
 ) {
 	Expect(response).To(HaveHTTPStatus(status))
 	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; charset=utf-8"))
@@ -529,7 +530,7 @@ func expectError(
 	data, err := io.ReadAll(response.Body)
 	Expect(err).ShouldNot(HaveOccurred())
 
-	var actual Error
+	var actual rpcerror.Error
 	err = actual.UnmarshalText(data)
 	Expect(err).ShouldNot(HaveOccurred())
 
