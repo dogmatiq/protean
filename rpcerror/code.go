@@ -8,6 +8,10 @@ type Code struct{ n int32 }
 var (
 	// Unknown is an error code used when no information is available about the
 	// error.
+	//
+	// The Unknown code is used whenever the server behaves incorrectly. Even
+	// though the reason may be known on the server, it is inappropriate to
+	// provide granular information about these errors to the client.
 	Unknown = Code{0}
 
 	// InvalidInput is an error code that indicates that the input message to
