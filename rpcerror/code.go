@@ -100,12 +100,6 @@ func NewCode(c int32) Code {
 	return Code{c}
 }
 
-// IsCustom returns true if this is a custom error code, as opposed to one of
-// the error codes pre-defined by this package.
-func (c Code) IsCustom() bool {
-	return c.n > 0
-}
-
 // NumericValue returns the numeric value of the error code.
 func (c Code) NumericValue() int32 {
 	return c.n
