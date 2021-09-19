@@ -24,6 +24,7 @@ func appendRuntimeCallConstructor(
 		Params(
 			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id("service").Id(s.ServiceInterface()),
+			jen.Id("interceptor").Qual(middlewarePackage, "ServerInterceptor"),
 		).
 		Params(
 			jen.Qual(runtimePackage, "Call"),
@@ -77,7 +78,7 @@ func appendRuntimeCallImpl(
 		Id("Recv").
 		Params().
 		Params(
-			jen.Qual("google.golang.org/protobuf/proto", "Message"),
+			jen.Qual(protoPackage, "Message"),
 			jen.Bool(),
 			jen.Error(),
 		).

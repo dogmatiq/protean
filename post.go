@@ -9,6 +9,7 @@ import (
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
+	"github.com/dogmatiq/protean/middleware"
 	"github.com/dogmatiq/protean/rpcerror"
 	"github.com/dogmatiq/protean/runtime"
 	"google.golang.org/protobuf/proto"
@@ -201,12 +202,12 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	call := method.NewCall(r.Context())
+	call := method.NewCall(r.Context(), middleware.Validator{})
 	defer call.Done()
 
 	// Send never blocks on unary RPC methods.
-	if _, err := call.Send(func(m proto.Message) error {
-		return unmarshaler.Unmarshal(data, m)
+	if _, err := call.Send(func(in proto.Message) error {
+		return unmarshaler.Unmarshal(data, in)
 	}); err != nil {
 		httpError(
 			w,

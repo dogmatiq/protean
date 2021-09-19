@@ -37,6 +37,7 @@ func (Validator) InterceptUnaryRPC(
 		if err := in.Validate(); err != nil {
 			return nil, rpcerror.New(
 				rpcerror.InvalidInput,
+				"the RPC input message is invalid: %s",
 				err.Error(),
 			)
 		}
@@ -51,7 +52,7 @@ func (Validator) InterceptUnaryRPC(
 		if err := out.Validate(); err != nil {
 			return nil, rpcerror.New(
 				rpcerror.Unknown,
-				"the server produced invalid RPC output",
+				"the server produced an invalid RPC output message",
 			).WithCause(err)
 		}
 	}
