@@ -72,6 +72,7 @@ func appendRuntimeMethodImpl(code *jen.File, s *scope.Method) {
 		Id("NewCall").
 		Params(
 			jen.Id("ctx").Qual("context", "Context"),
+			jen.Id("interceptor").Qual(middlewarePackage, "ServerInterceptor"),
 		).
 		Params(
 			jen.Qual(runtimePackage, "Call"),
@@ -80,6 +81,7 @@ func appendRuntimeMethodImpl(code *jen.File, s *scope.Method) {
 			jen.Id(s.RuntimeCallConstructor()).Call(
 				jen.Id("ctx"),
 				jen.Id("m").Dot("service"),
+				jen.Id("interceptor"),
 			),
 		))
 }

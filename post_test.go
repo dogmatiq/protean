@@ -71,16 +71,19 @@ var _ = Describe("type PostHandler", func() {
 			nil,
 		).WithContext(ctx)
 
-		data, err := protojson.Marshal(input)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		// Supply an empty JSON request by default.
-		request.Header.Set("Content-Type", "application/json")
-		request.Body = io.NopCloser(bytes.NewReader(data))
-
 		response = httptest.NewRecorder()
 
 		testservice.RegisterProteanTestService(handler, service)
+	})
+
+	// Use JustBeforeEach to set the body so that we can manipulate the input
+	// message in BeforeEach blocks before it is marshaled.
+	JustBeforeEach(func() {
+		data, err := protojson.Marshal(input)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		request.Header.Set("Content-Type", "application/json")
+		request.Body = io.NopCloser(bytes.NewReader(data))
 	})
 
 	AfterEach(func() {
@@ -124,13 +127,15 @@ var _ = Describe("type PostHandler", func() {
 			})
 
 			When("the request uses the text protocol buffers format", func() {
-				It("it passes the input message to the RPC method", func() {
+				JustBeforeEach(func() {
 					data, err := prototext.Marshal(input)
 					Expect(err).ShouldNot(HaveOccurred())
 
 					request.Header.Set("Content-Type", "text/plain")
 					request.Body = io.NopCloser(bytes.NewReader(data))
+				})
 
+				It("it passes the input message to the RPC method", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
@@ -141,7 +146,7 @@ var _ = Describe("type PostHandler", func() {
 			})
 
 			When("the request body can not be read", func() {
-				BeforeEach(func() {
+				JustBeforeEach(func() {
 					request.Body = io.NopCloser(iotest.NewFailer(nil, nil))
 				})
 
@@ -163,8 +168,31 @@ var _ = Describe("type PostHandler", func() {
 				})
 			})
 
-			When("the input message can not be unmarshaled", func() {
+			When("the input message is invalid", func() {
 				BeforeEach(func() {
+					input.Data = ""
+				})
+
+				It("it reponds with an HTTP '400 Bad Request' status", func() {
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						http.StatusBadRequest,
+						rpcerror.New(
+							rpcerror.InvalidInput,
+							"the RPC input message is invalid: input data must not be empty",
+						),
+					)
+
+					expectStandardHeaders(response)
+
+					Expect(invoked).To(BeFalse())
+				})
+			})
+
+			When("the input message can not be unmarshaled", func() {
+				JustBeforeEach(func() {
 					request.Header.Set("Content-Type", "application/json")
 					request.Body = io.NopCloser(strings.NewReader("}"))
 				})
@@ -190,7 +218,7 @@ var _ = Describe("type PostHandler", func() {
 
 		Context("marshaling & content negotation", func() {
 			When("the Accept header is absent", func() {
-				BeforeEach(func() {
+				JustBeforeEach(func() {
 					request.Header.Del("Accept")
 				})
 
@@ -245,7 +273,7 @@ var _ = Describe("type PostHandler", func() {
 			})
 
 			When("the client prefers the JSON protocol buffers format", func() {
-				BeforeEach(func() {
+				JustBeforeEach(func() {
 					request.Header.Set(
 						"Accept",
 						"text/xml;q=0.1, text/plain;q=0.5, application/vnd.google.protobuf;q=0.75, application/x-protobuf;q=0.75, application/json",
@@ -271,7 +299,7 @@ var _ = Describe("type PostHandler", func() {
 			})
 
 			When("the client prefers the text protocol buffers format", func() {
-				BeforeEach(func() {
+				JustBeforeEach(func() {
 					request.Header.Set(
 						"Accept",
 						"text/xml;q=0.1, text/plain, application/vnd.google.protobuf;q=0.75, application/x-protobuf;q=0.75, application/json;q=0.5",
@@ -297,7 +325,7 @@ var _ = Describe("type PostHandler", func() {
 			})
 
 			When("the client does not accept any of the media types supported by the server", func() {
-				BeforeEach(func() {
+				JustBeforeEach(func() {
 					request.Header.Set("Accept", "text/xml")
 				})
 
@@ -329,7 +357,7 @@ var _ = Describe("type PostHandler", func() {
 			})
 
 			When("the Accept header is malformed", func() {
-				BeforeEach(func() {
+				JustBeforeEach(func() {
 					request.Header.Set("Accept", "garbage;x")
 				})
 
@@ -348,6 +376,27 @@ var _ = Describe("type PostHandler", func() {
 					expectStandardHeaders(response)
 
 					Expect(invoked).To(BeFalse())
+				})
+			})
+
+			When("the output message is invalid", func() {
+				BeforeEach(func() {
+					output.Data = ""
+				})
+
+				It("it reponds with an HTTP '500 Internal Server Error' status", func() {
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						http.StatusInternalServerError,
+						rpcerror.New(
+							rpcerror.Unknown,
+							"the server produced an invalid RPC output message",
+						),
+					)
+
+					expectStandardHeaders(response)
 				})
 			})
 
@@ -526,7 +575,7 @@ var _ = Describe("type PostHandler", func() {
 		})
 
 		When("the request supplies an unsupported Content-Type header", func() {
-			BeforeEach(func() {
+			JustBeforeEach(func() {
 				request.Header.Set("Content-Type", "text/xml")
 			})
 

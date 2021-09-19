@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 
+	"github.com/dogmatiq/protean/middleware"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -55,7 +56,7 @@ type Method interface {
 	//
 	// ctx is the context for the lifetime of the call, including any time taken
 	// to stream input and output messages.
-	NewCall(ctx context.Context) Call
+	NewCall(ctx context.Context, i middleware.ServerInterceptor) Call
 }
 
 // Call represents a single invocation of an RPC method.

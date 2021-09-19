@@ -18,6 +18,7 @@ func appendUnaryRuntimeCallConstructor(code *jen.File, s *scope.Method) {
 				jen.Op("&").Id(s.RuntimeCallImpl()).Values(
 					jen.Id("ctx"),
 					jen.Id("service"),
+					jen.Id("interceptor"),
 					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType), jen.Lit(1)),
 				),
 			),
@@ -38,6 +39,7 @@ func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
 		[]jen.Code{
 			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id("service").Id(s.ServiceInterface()),
+			jen.Id("interceptor").Qual(middlewarePackage, "ServerInterceptor"),
 			jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
 		},
 
@@ -91,11 +93,36 @@ func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
 				),
 				jen.Line(),
 				jen.Id("out").Op(",").Id("err").Op(":=").
-					Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
-					Call(
-						jen.Id("c").Dot("ctx"),
-						jen.Id("in"),
+					Id("c").Dot("interceptor").Dot("InterceptUnaryRPC").Call(
+					jen.Line().Id("c").Dot("ctx"),
+					jen.Line().Qual(middlewarePackage, "UnaryServerInfo").Values(
+						jen.Dict{
+							jen.Id("Package"): jen.Lit(s.FileDesc.GetPackage()),
+							jen.Id("Service"): jen.Lit(s.ServiceDesc.GetName()),
+							jen.Id("Method"):  jen.Lit(s.MethodDesc.GetName()),
+						},
 					),
+					jen.Line().Id("in"),
+					jen.Line().Func().
+						Params(
+							jen.Id("ctx").Qual("context", "Context"),
+						).
+						Params(
+							jen.Qual(protoPackage, "Message"),
+							jen.Error(),
+						).
+						Block(
+							jen.Return(
+								jen.Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
+									Call(
+										jen.Id("ctx"),
+										jen.Id("in"),
+									),
+							),
+						),
+					jen.Line(),
+				),
+				jen.Line(),
 				jen.Return(
 					jen.Id("out"),
 					jen.False(),

@@ -8,8 +8,10 @@ import (
 )
 
 const (
-	rootPackage    = "github.com/dogmatiq/protean"
-	runtimePackage = rootPackage + "/runtime"
+	protoPackage      = "google.golang.org/protobuf/proto"
+	rootPackage       = "github.com/dogmatiq/protean"
+	runtimePackage    = rootPackage + "/runtime"
+	middlewarePackage = rootPackage + "/middleware"
 )
 
 // Generator produces a code generation response from a request.
