@@ -3,6 +3,7 @@ package protean_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -92,6 +93,79 @@ var _ = Describe("type Handler", func() {
 	})
 
 	Describe("func ServeHTTP()", func() {
+		When("the RPC method succeeds", func() {
+			It("responds with the the RPC output message", func() {
+				handler.ServeHTTP(response, request)
+
+				Expect(response).To(HaveHTTPStatus(http.StatusOK))
+				expectStandardHeaders(response)
+
+				data, err := io.ReadAll(response.Body)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				var out testservice.Output
+				err = protojson.Unmarshal(data, &out)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				Expect(out.GetData()).To(Equal("<output>"))
+			})
+		})
+
+		When("the RPC method returns an error", func() {
+			DescribeTable(
+				"it maps rpcerror.Code to an appropriate HTTP status code",
+				func(errorCode rpcerror.Code, httpCode int) {
+					service.UnaryFunc = func(
+						ctx context.Context,
+						in *testservice.Input,
+					) (*testservice.Output, error) {
+						return nil, rpcerror.New(errorCode, "<error>")
+					}
+
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						httpCode,
+						rpcerror.New(errorCode, "<error>"),
+					)
+					expectStandardHeaders(response)
+				},
+				Entry("Unknown", rpcerror.Unknown, http.StatusInternalServerError),
+				Entry("InvalidInput", rpcerror.InvalidInput, http.StatusBadRequest),
+				Entry("Unauthenticated", rpcerror.Unauthenticated, http.StatusUnauthorized),
+				Entry("PermissionDenied", rpcerror.PermissionDenied, http.StatusForbidden),
+				Entry("NotFound", rpcerror.NotFound, http.StatusNotFound),
+				Entry("AlreadyExists", rpcerror.AlreadyExists, http.StatusConflict),
+				Entry("ResourceExhausted", rpcerror.ResourceExhausted, http.StatusTooManyRequests),
+				Entry("FailedPrecondition", rpcerror.FailedPrecondition, http.StatusBadRequest),
+				Entry("Aborted", rpcerror.Aborted, http.StatusConflict),
+				Entry("Unavailable", rpcerror.Unavailable, http.StatusServiceUnavailable),
+				Entry("NotImplemented", rpcerror.NotImplemented, http.StatusNotImplemented),
+			)
+
+			It("does not include the error message from arbitrary errors", func() {
+				service.UnaryFunc = func(
+					ctx context.Context,
+					in *testservice.Input,
+				) (*testservice.Output, error) {
+					return nil, errors.New("<error>")
+				}
+
+				handler.ServeHTTP(response, request)
+
+				expectError(
+					response,
+					http.StatusInternalServerError,
+					rpcerror.New(
+						rpcerror.Unknown,
+						"the RPC method returned an unrecognized error",
+					),
+				)
+				expectStandardHeaders(response)
+			})
+		})
+
 		Context("unmarshaling", func() {
 			When("the request uses the binary protocol buffers format", func() {
 				DescribeTable(

@@ -33,8 +33,6 @@ func httpError(
 // with the given code occurs.
 func httpStatusFromErrorCode(c rpcerror.Code) int {
 	switch c {
-	case rpcerror.Unknown:
-		return http.StatusInternalServerError
 	case rpcerror.InvalidInput:
 		return http.StatusBadRequest
 	case rpcerror.Unauthenticated:
