@@ -3,7 +3,8 @@ package protean.test;
 
 option go_package = "github.com/dogmatiq/protean/internal/testservice";
 
-// TestService is a service used to test transport implementations.
+// TestService is a service used to test Protean's HTTP handlers and client
+// implementations.
 service TestService {
   // Unary is an RPC method that accepts a single input message and responds
   // with a single output message.

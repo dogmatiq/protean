@@ -2,6 +2,7 @@ package generator
 
 import (
 	"github.com/dave/jennifer/jen"
+	"github.com/dogmatiq/protean/internal/generator/descriptorutil"
 	"github.com/dogmatiq/protean/internal/generator/scope"
 )
 
@@ -19,6 +20,15 @@ func appendServiceInterface(code *jen.File, s *scope.Service) error {
 		s.FileDesc.GetPackage(),
 		s.ServiceDesc.GetName(),
 	)
+
+	if comments := descriptorutil.ServiceComments(s.FileDesc, s.ServiceDesc); len(comments) != 0 {
+		code.Comment("")
+
+		for _, line := range comments {
+			code.Comment(line)
+		}
+	}
+
 	code.Type().
 		Id(s.ServiceInterface()).
 		Interface(methods...)
@@ -31,7 +41,7 @@ func appendServiceInterface(code *jen.File, s *scope.Service) error {
 func genServiceInterfaceMethods(s *scope.Service) ([]jen.Code, error) {
 	var methods []jen.Code
 
-	for _, m := range s.ServiceDesc.GetMethod() {
+	for i, m := range s.ServiceDesc.GetMethod() {
 		s := s.EnterMethod(m)
 
 		inputs, err := genInterfaceMethodInputs(s)
@@ -42,6 +52,20 @@ func genServiceInterfaceMethods(s *scope.Service) ([]jen.Code, error) {
 		outputs, err := genInterfaceMethodOutputs(s)
 		if err != nil {
 			return nil, err
+		}
+
+		if i > 0 {
+			methods = append(
+				methods,
+				jen.Line(),
+			)
+		}
+
+		for _, line := range descriptorutil.MethodComments(s.FileDesc, s.ServiceDesc, s.MethodDesc) {
+			methods = append(
+				methods,
+				jen.Comment(line),
+			)
 		}
 
 		methods = append(
