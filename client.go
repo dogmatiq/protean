@@ -7,7 +7,7 @@ import (
 	"github.com/dogmatiq/protean/runtime"
 )
 
-// ClientOption is an option that changes the behavior of a generated client.
+// ClientOption is an option that changes the behavior of an RPC client.
 type ClientOption func(*runtime.ClientOptions)
 
 // WithHTTPClient is a ClientOption that sets the HTTP client to use when making

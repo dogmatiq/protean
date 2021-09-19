@@ -16,14 +16,29 @@ import (
 )
 
 // Handler is an http.Handler that maps HTTP requests to RPC calls.
-type Handler struct {
+type Handler interface {
+	http.Handler
+	runtime.Registry
+}
+
+// postHandler is an implementation of Handler that accepts RPC method calls as
+// HTTP POST requests.
+type postHandler struct {
 	services map[string]runtime.Service
 }
 
-var _ runtime.Registry = (*Handler)(nil)
+// HandlerOption is an option that changes the behavior of an HTTP handler.
+type HandlerOption func(*handlerOptions)
+
+type handlerOptions struct{}
+
+// NewHandler returns a new HTTP handler that maps HTTP requests to RPC calls.
+func NewHandler(options ...HandlerOption) Handler {
+	return &postHandler{}
+}
 
 // RegisterService adds a service to this handler.
-func (h *Handler) RegisterService(s runtime.Service) {
+func (h *postHandler) RegisterService(s runtime.Service) {
 	prefix := fmt.Sprintf(
 		"%s.%s",
 		s.Package(),
@@ -55,7 +70,7 @@ func (h *Handler) RegisterService(s runtime.Service) {
 //
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 

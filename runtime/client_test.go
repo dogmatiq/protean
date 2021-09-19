@@ -19,7 +19,7 @@ var _ = Describe("type Client", func() {
 		cancel  context.CancelFunc
 		input   *testservice.Input
 		output  *testservice.Output
-		handler *protean.Handler
+		handler protean.Handler
 		service *testservice.Stub
 		server  *httptest.Server
 		client  testservice.ProteanTestService
@@ -30,7 +30,7 @@ var _ = Describe("type Client", func() {
 
 		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 
-		handler = &protean.Handler{}
+		handler = protean.NewHandler()
 
 		input = &testservice.Input{
 			Data: "<input>",

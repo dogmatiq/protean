@@ -43,7 +43,7 @@ func Example() {
 	//
 	// This is an implementation of Go's standard http.Handler that dispatches
 	// calls to RPC services.
-	handler := &protean.Handler{}
+	handler := protean.NewHandler()
 
 	// Register our example implementation of the string service with the
 	// Protean handler.

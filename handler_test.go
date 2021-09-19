@@ -31,7 +31,7 @@ var _ = Describe("type Handler", func() {
 		cancel   context.CancelFunc
 		input    *testservice.Input
 		output   *testservice.Output
-		handler  *Handler
+		handler  Handler
 		invoked  bool
 		service  *testservice.Stub
 		request  *http.Request
@@ -43,7 +43,7 @@ var _ = Describe("type Handler", func() {
 
 		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 
-		handler = &Handler{}
+		handler = NewHandler()
 
 		input = &testservice.Input{
 			Data: "<input>",
