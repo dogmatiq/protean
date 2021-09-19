@@ -15,16 +15,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// PostHandler is an http.Handler that handles RPC calls made by posting to an
-// RPC method endpoint.
-type PostHandler struct {
+// Handler is an http.Handler that maps HTTP requests to RPC calls.
+type Handler struct {
 	services map[string]runtime.Service
 }
 
-var _ runtime.Registry = (*PostHandler)(nil)
+var _ runtime.Registry = (*Handler)(nil)
 
 // RegisterService adds a service to this handler.
-func (h *PostHandler) RegisterService(s runtime.Service) {
+func (h *Handler) RegisterService(s runtime.Service) {
 	prefix := fmt.Sprintf(
 		"%s.%s",
 		s.Package(),
@@ -56,7 +55,7 @@ func (h *PostHandler) RegisterService(s runtime.Service) {
 //
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
-func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 

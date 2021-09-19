@@ -25,13 +25,13 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ = Describe("type PostHandler", func() {
+var _ = Describe("type Handler", func() {
 	var (
 		ctx      context.Context
 		cancel   context.CancelFunc
 		input    *testservice.Input
 		output   *testservice.Output
-		handler  *PostHandler
+		handler  *Handler
 		invoked  bool
 		service  *testservice.Stub
 		request  *http.Request
@@ -43,7 +43,7 @@ var _ = Describe("type PostHandler", func() {
 
 		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 
-		handler = &PostHandler{}
+		handler = &Handler{}
 
 		input = &testservice.Input{
 			Data: "<input>",
