@@ -153,7 +153,7 @@ var _ = Describe("type PostHandler", func() {
 						http.StatusInternalServerError,
 						rpcerror.New(
 							rpcerror.Unknown,
-							"The request body could not be read.",
+							"the request body could not be read",
 						),
 					)
 
@@ -177,7 +177,7 @@ var _ = Describe("type PostHandler", func() {
 						http.StatusBadRequest,
 						rpcerror.New(
 							rpcerror.Unknown,
-							"The RPC input message could not be unmarshaled from the request body.",
+							"the RPC input message could not be unmarshaled from the request body",
 						),
 					)
 
@@ -309,7 +309,7 @@ var _ = Describe("type PostHandler", func() {
 						http.StatusNotAcceptable,
 						rpcerror.New(
 							rpcerror.Unknown,
-							"The client does not accept any of the media-types supported by the server.",
+							"the client does not accept any of the media-types supported by the server",
 						).WithDetails(
 							&proteanpb.SupportedMediaTypes{
 								MediaTypes: []string{
@@ -341,7 +341,7 @@ var _ = Describe("type PostHandler", func() {
 						http.StatusBadRequest,
 						rpcerror.New(
 							rpcerror.Unknown,
-							"The Accept header is invalid.",
+							"the Accept header is invalid",
 						),
 					)
 
@@ -364,7 +364,7 @@ var _ = Describe("type PostHandler", func() {
 						http.StatusInternalServerError,
 						rpcerror.New(
 							rpcerror.Unknown,
-							"The RPC output message could not be marshaled to the response body.",
+							"the RPC output message could not be marshaled to the response body",
 						),
 					)
 
@@ -402,32 +402,32 @@ var _ = Describe("type PostHandler", func() {
 				Entry(
 					"root",
 					"/",
-					"The request URI must follow the '/<package>/<service>/<method>' pattern.",
+					"the request URI must follow the '/<package>/<service>/<method>' pattern",
 				),
 				Entry(
 					"missing service & package",
 					"/package",
-					"The request URI must follow the '/<package>/<service>/<method>' pattern.",
+					"the request URI must follow the '/<package>/<service>/<method>' pattern",
 				),
 				Entry(
 					"missing method",
 					"/package/Service",
-					"The request URI must follow the '/<package>/<service>/<method>' pattern.",
+					"the request URI must follow the '/<package>/<service>/<method>' pattern",
 				),
 				Entry(
 					"extra segments",
 					"/package/Service/Method/unknown",
-					"The request URI must follow the '/<package>/<service>/<method>' pattern.",
+					"the request URI must follow the '/<package>/<service>/<method>' pattern",
 				),
 				Entry(
 					"unknown service",
 					"/package/Service/Method",
-					"The server does not provide the 'package.Service' service.",
+					"the server does not provide the 'package.Service' service",
 				),
 				Entry(
 					"unknown method",
 					"/protean.test/TestService/Method",
-					"The 'protean.test.TestService' service does not contain an RPC method named 'Method'.",
+					"the 'protean.test.TestService' service does not contain an RPC method named 'Method'",
 				),
 			)
 		})
@@ -461,17 +461,17 @@ var _ = Describe("type PostHandler", func() {
 				Entry(
 					"client streaming method",
 					"/protean.test/TestService/ClientStream",
-					"The 'protean.test.TestService' service does contain an RPC method named 'ClientStream', but is not supported by this server because it uses streaming inputs or outputs.",
+					"the 'protean.test.TestService' service does contain an RPC method named 'ClientStream', but is not supported by this server because it uses streaming inputs or outputs",
 				),
 				Entry(
 					"server streaming method",
 					"/protean.test/TestService/ServerStream",
-					"The 'protean.test.TestService' service does contain an RPC method named 'ServerStream', but is not supported by this server because it uses streaming inputs or outputs.",
+					"the 'protean.test.TestService' service does contain an RPC method named 'ServerStream', but is not supported by this server because it uses streaming inputs or outputs",
 				),
 				Entry(
 					"bidirectional streaming method",
 					"/protean.test/TestService/BidirectionalStream",
-					"The 'protean.test.TestService' service does contain an RPC method named 'BidirectionalStream', but is not supported by this server because it uses streaming inputs or outputs.",
+					"the 'protean.test.TestService' service does contain an RPC method named 'BidirectionalStream', but is not supported by this server because it uses streaming inputs or outputs",
 				),
 			)
 		})
@@ -489,7 +489,7 @@ var _ = Describe("type PostHandler", func() {
 					http.StatusNotImplemented,
 					rpcerror.New(
 						rpcerror.NotImplemented,
-						"The HTTP method must be POST.",
+						"the HTTP method must be POST",
 					),
 				)
 
@@ -512,7 +512,7 @@ var _ = Describe("type PostHandler", func() {
 						http.StatusBadRequest,
 						rpcerror.New(
 							rpcerror.Unknown,
-							"The Content-Type header is missing or invalid.",
+							"the Content-Type header is missing or invalid",
 						),
 					)
 
@@ -538,7 +538,7 @@ var _ = Describe("type PostHandler", func() {
 					http.StatusUnsupportedMediaType,
 					rpcerror.New(
 						rpcerror.Unknown,
-						"The server does not support the 'text/xml' media-type supplied by the client.",
+						"the server does not support the 'text/xml' media-type supplied by the client",
 					).WithDetails(
 						&proteanpb.SupportedMediaTypes{
 							MediaTypes: []string{

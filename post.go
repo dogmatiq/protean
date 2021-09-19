@@ -66,7 +66,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusNotFound,
 			rpcerror.New(
 				rpcerror.NotFound,
-				"The request URI must follow the '/<package>/<service>/<method>' pattern.",
+				"the request URI must follow the '/<package>/<service>/<method>' pattern",
 			),
 		)
 		return
@@ -79,7 +79,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusNotFound,
 			rpcerror.New(
 				rpcerror.NotFound,
-				"The server does not provide the '%s' service.",
+				"the server does not provide the '%s' service",
 				serviceName,
 			),
 		)
@@ -93,7 +93,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusNotFound,
 			rpcerror.New(
 				rpcerror.NotFound,
-				"The '%s' service does not contain an RPC method named '%s'.",
+				"the '%s' service does not contain an RPC method named '%s'",
 				serviceName,
 				methodName,
 			),
@@ -107,7 +107,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusNotImplemented,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"The '%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs.",
+				"the '%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs",
 				serviceName,
 				methodName,
 			),
@@ -125,7 +125,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusNotImplemented,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"The HTTP method must be POST.",
+				"the HTTP method must be POST",
 			),
 		)
 		return
@@ -138,7 +138,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 			rpcerror.New(
 				rpcerror.Unknown,
-				"The Content-Type header is missing or invalid.",
+				"the Content-Type header is missing or invalid",
 			),
 		)
 		return
@@ -149,7 +149,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusUnsupportedMediaType,
 			rpcerror.New(
 				rpcerror.Unknown,
-				"The server does not support the '%s' media-type supplied by the client.",
+				"the server does not support the '%s' media-type supplied by the client",
 				inputMediaType,
 			).WithDetails(
 				&proteanpb.SupportedMediaTypes{
@@ -167,7 +167,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 			rpcerror.New(
 				rpcerror.Unknown,
-				"The Accept header is invalid.",
+				"the Accept header is invalid",
 			),
 		)
 		return
@@ -178,7 +178,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusNotAcceptable,
 			rpcerror.New(
 				rpcerror.Unknown,
-				"The client does not accept any of the media-types supported by the server.",
+				"the client does not accept any of the media-types supported by the server",
 			).WithDetails(
 				&proteanpb.SupportedMediaTypes{
 					MediaTypes: protomime.MediaTypes,
@@ -195,7 +195,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusInternalServerError,
 			rpcerror.New(
 				rpcerror.Unknown,
-				"The request body could not be read.",
+				"the request body could not be read",
 			),
 		)
 		return
@@ -213,7 +213,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 			rpcerror.New(
 				rpcerror.Unknown,
-				"The RPC input message could not be unmarshaled from the request body.",
+				"the RPC input message could not be unmarshaled from the request body",
 			),
 		)
 		return
@@ -233,7 +233,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.StatusInternalServerError,
 				rpcerror.New(
 					rpcerror.Unknown,
-					"The RPC method returned an unrecognized error.",
+					"the RPC method returned an unrecognized error",
 				),
 			)
 		}
@@ -248,7 +248,7 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.StatusInternalServerError,
 			rpcerror.New(
 				rpcerror.Unknown,
-				"The RPC output message could not be marshaled to the response body.",
+				"the RPC output message could not be marshaled to the response body",
 			),
 		)
 		return
