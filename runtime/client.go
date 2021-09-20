@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"path"
@@ -103,6 +104,11 @@ func (c *Client) CallUnary(
 		return fmt.Errorf("unable to unmarshal RPC output message: response has no Content-Type header")
 	}
 
+	contentType, _, err = mime.ParseMediaType(contentType)
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal RPC output message: Content-Type header is invalid: %w", err)
+	}
+
 	if res.StatusCode == http.StatusOK {
 		if err := c.unmarshal(contentType, data, out); err != nil {
 			return fmt.Errorf("unable to unmarshal RPC output message: %w", err)
@@ -118,6 +124,9 @@ func (c *Client) CallUnary(
 
 	rpcErr, err := rpcerror.FromProto(protoErr)
 	if err != nil {
+		// CODE COVERAGE: This condition can not be reproduced, as currently
+		// FromProto() only returns an error if protoErr is not a
+		// *proteanpb.Error.
 		return fmt.Errorf("unable to unmarshal RPC error: %w", err)
 	}
 
