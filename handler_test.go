@@ -417,7 +417,7 @@ var _ = Describe("type Handler", func() {
 					)
 				})
 
-				It("responds using the JSON protocol buffers format", func() {
+				It("encodes RPC output messages using the JSON protocol buffers format", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
@@ -434,7 +434,7 @@ var _ = Describe("type Handler", func() {
 					Expect(out.GetData()).To(Equal("<output>"))
 				})
 
-				It("encodes RPC errors using the binary protocol buffers format", func() {
+				It("encodes RPC errors using the JSON protocol buffers format", func() {
 					service.UnaryFunc = func(
 						ctx context.Context,
 						in *testservice.Input,
@@ -465,7 +465,7 @@ var _ = Describe("type Handler", func() {
 					)
 				})
 
-				It("responds using the JSON protocol buffers format", func() {
+				It("encodes RPC output messages using the text-based protocol buffers format", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
@@ -482,7 +482,7 @@ var _ = Describe("type Handler", func() {
 					Expect(out.GetData()).To(Equal("<output>"))
 				})
 
-				It("encodes RPC errors using the binary protocol buffers format", func() {
+				It("encodes RPC errors using the text-based protocol buffers format", func() {
 					service.UnaryFunc = func(
 						ctx context.Context,
 						in *testservice.Input,
