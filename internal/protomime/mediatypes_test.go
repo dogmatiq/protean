@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("type IsSupportedMediaType()", func() {
+var _ = Describe("func IsSupportedMediaType()", func() {
 	DescribeTable(
 		"it returns true for supported media types",
 		func(mediaType string) {
@@ -25,7 +25,7 @@ var _ = Describe("type IsSupportedMediaType()", func() {
 	})
 })
 
-var _ = Describe("type IsBinary()", func() {
+var _ = Describe("func IsBinary()", func() {
 	DescribeTable(
 		"it returns true for binary media types",
 		func(mediaType string) {
@@ -45,7 +45,7 @@ var _ = Describe("type IsBinary()", func() {
 	)
 })
 
-var _ = Describe("type IsJSON()", func() {
+var _ = Describe("func IsJSON()", func() {
 	DescribeTable(
 		"it returns true for binary media types",
 		func(mediaType string) {
@@ -65,7 +65,7 @@ var _ = Describe("type IsJSON()", func() {
 	)
 })
 
-var _ = Describe("type IsText()", func() {
+var _ = Describe("func IsText()", func() {
 	DescribeTable(
 		"it returns true for binary media types",
 		func(mediaType string) {
@@ -85,7 +85,7 @@ var _ = Describe("type IsText()", func() {
 	)
 })
 
-var _ = Describe("type FormatMediaType()", func() {
+var _ = Describe("func FormatMediaType()", func() {
 	It("adds the x-proto parameter", func() {
 		mediaType := FormatMediaType("application/json", &testservice.Input{})
 		Expect(mediaType).To(Equal("application/json; x-proto=protean.test.Input"))
