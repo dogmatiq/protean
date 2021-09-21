@@ -86,7 +86,7 @@ func (c *Client) CallUnary(
 		return fmt.Errorf("unable to create HTTP request: %w", err)
 	}
 
-	req.Header.Set("Content-Type", opts.InputMediaType)
+	req.Header.Set("Content-Type", protomime.FormatMediaType(opts.InputMediaType, in))
 	req.Header.Set("Accept", acceptHeader(opts.OutputMediaType))
 
 	res, err := c.opts.HTTPClient.Do(req)

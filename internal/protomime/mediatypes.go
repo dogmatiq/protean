@@ -1,5 +1,11 @@
 package protomime
 
+import (
+	"mime"
+
+	"google.golang.org/protobuf/proto"
+)
+
 // MediaTypes is the set of all media types that can be used for marshaling and
 // unmarshaling Protocol Buffers messages, in order of preference.
 var MediaTypes []string
@@ -68,6 +74,20 @@ func IsText(mediaType string) bool {
 	}
 
 	return false
+}
+
+// FormatMediaType formats a complete media type, including parameters, to use
+// when marshaling m.
+func FormatMediaType(mediaType string, m proto.Message) string {
+	params := map[string]string{
+		"x-proto": string(proto.MessageName(m)),
+	}
+
+	if IsText(mediaType) {
+		params["charset"] = "utf-8"
+	}
+
+	return mime.FormatMediaType(mediaType, params)
 }
 
 func init() {

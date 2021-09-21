@@ -297,7 +297,7 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-Type", outputMediaType)
+	w.Header().Add("Content-Type", protomime.FormatMediaType(outputMediaType, out))
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
@@ -366,7 +366,8 @@ func httpError(
 		panic(err)
 	}
 
-	w.Header().Set("Content-Type", mediaType)
+	w.Header().Set("Content-Type", protomime.FormatMediaType(mediaType, &protoErr))
+	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(status)
 	_, _ = w.Write(data)
 }
