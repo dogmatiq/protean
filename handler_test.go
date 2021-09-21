@@ -128,7 +128,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						httpCode,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(errorCode, "<error>"),
 					)
 					expectStandardHeaders(response)
@@ -159,7 +159,7 @@ var _ = Describe("type Handler", func() {
 				expectError(
 					response,
 					http.StatusInternalServerError,
-					"application/json",
+					"application/json; x-proto=protean.v1.Error",
 					rpcerror.New(
 						rpcerror.Unknown,
 						"the RPC method returned an unrecognized error",
@@ -233,7 +233,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the request body could not be read",
@@ -257,7 +257,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.InvalidInput,
 							"the RPC input message is invalid: input data must not be empty",
@@ -282,7 +282,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the RPC input message could not be unmarshaled from the request body",
@@ -306,7 +306,7 @@ var _ = Describe("type Handler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
-					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json; proto=protean.test.Output"))
+					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json; x-proto=protean.test.Output"))
 					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
@@ -334,7 +334,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the RPC method returned an unrecognized error",
@@ -358,7 +358,7 @@ var _ = Describe("type Handler", func() {
 						handler.ServeHTTP(response, request)
 
 						Expect(response).To(HaveHTTPStatus(http.StatusOK))
-						Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType+"; proto=protean.test.Output"))
+						Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType+"; x-proto=protean.test.Output"))
 						expectStandardHeaders(response)
 
 						data, err := io.ReadAll(response.Body)
@@ -397,7 +397,7 @@ var _ = Describe("type Handler", func() {
 						expectError(
 							response,
 							http.StatusInternalServerError,
-							mediaType,
+							mediaType+"; x-proto=protean.v1.Error",
 							rpcerror.New(
 								rpcerror.Unknown,
 								"the RPC method returned an unrecognized error",
@@ -422,7 +422,7 @@ var _ = Describe("type Handler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
-					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json; proto=protean.test.Output"))
+					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json; x-proto=protean.test.Output"))
 					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
@@ -448,7 +448,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the RPC method returned an unrecognized error",
@@ -470,7 +470,7 @@ var _ = Describe("type Handler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
-					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; proto=protean.test.Output"))
+					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; charset=utf-8; x-proto=protean.test.Output"))
 					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
@@ -496,7 +496,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						"text/plain",
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the RPC method returned an unrecognized error",
@@ -517,7 +517,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusNotAcceptable,
-						protomime.TextMediaTypes[0],
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the client does not accept any of the media-types supported by the server",
@@ -550,7 +550,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
-						"text/plain",
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the Accept header is invalid",
@@ -574,7 +574,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the server produced an invalid RPC output message",
@@ -596,7 +596,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
-						"application/json",
+						"application/json; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the RPC output message could not be marshaled to the response body",
@@ -619,7 +619,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusNotFound,
-						protomime.TextMediaTypes[0],
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.NotFound,
 							message,
@@ -679,7 +679,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusNotImplemented,
-						protomime.TextMediaTypes[0],
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.NotImplemented,
 							message,
@@ -724,7 +724,7 @@ var _ = Describe("type Handler", func() {
 				expectError(
 					response,
 					http.StatusNotImplemented,
-					protomime.TextMediaTypes[0],
+					"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 					rpcerror.New(
 						rpcerror.NotImplemented,
 						"the HTTP method must be POST",
@@ -748,7 +748,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
-						"text/plain",
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the Content-Type header is missing or invalid",
@@ -775,7 +775,7 @@ var _ = Describe("type Handler", func() {
 				expectError(
 					response,
 					http.StatusUnsupportedMediaType,
-					"text/plain",
+					"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 					rpcerror.New(
 						rpcerror.Unknown,
 						"the server does not support the 'text/xml' media-type supplied by the client",
@@ -816,23 +816,18 @@ func expectError(
 	mediaType string,
 	expect rpcerror.Error,
 ) {
-	expectedMediaType := mime.FormatMediaType(
-		mediaType,
-		map[string]string{
-			"proto": "protean.v1.Error",
-		},
-	)
+	var protoErr proteanpb.Error
 
 	Expect(response).To(HaveHTTPStatus(status))
-	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", expectedMediaType))
+	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType))
 
 	data, err := io.ReadAll(response.Body)
 	Expect(err).ShouldNot(HaveOccurred())
 
+	mediaType, _, _ = mime.ParseMediaType(mediaType)
 	unmarshaler, ok := protomime.UnmarshalerForMediaType(mediaType)
 	Expect(ok).To(BeTrue())
 
-	var protoErr proteanpb.Error
 	err = unmarshaler.Unmarshal(data, &protoErr)
 	Expect(err).ShouldNot(HaveOccurred())
 

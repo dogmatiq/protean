@@ -3,7 +3,6 @@ package protean
 import (
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
 	"strconv"
 	"strings"
@@ -298,14 +297,7 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outputMediaType = mime.FormatMediaType(
-		outputMediaType,
-		map[string]string{
-			"proto": string(proto.MessageName(out)),
-		},
-	)
-
-	w.Header().Add("Content-Type", outputMediaType)
+	w.Header().Add("Content-Type", protomime.FormatMediaType(outputMediaType, out))
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
@@ -374,14 +366,7 @@ func httpError(
 		panic(err)
 	}
 
-	mediaType = mime.FormatMediaType(
-		mediaType,
-		map[string]string{
-			"proto": string(proto.MessageName(&protoErr)),
-		},
-	)
-
-	w.Header().Set("Content-Type", mediaType)
+	w.Header().Set("Content-Type", protomime.FormatMediaType(mediaType, &protoErr))
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(status)
 	_, _ = w.Write(data)
