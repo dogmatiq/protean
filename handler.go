@@ -79,6 +79,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotFound,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotFound,
 				"the request URI must follow the '/<package>/<service>/<method>' pattern",
@@ -92,6 +94,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotFound,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotFound,
 				"the server does not provide the '%s' service",
@@ -106,6 +110,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotFound,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotFound,
 				"the '%s' service does not contain an RPC method named '%s'",
@@ -120,6 +126,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotImplemented,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
 				"the '%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs",
@@ -138,6 +146,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotImplemented,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
 				"the HTTP method must be POST",
@@ -151,6 +161,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusBadRequest,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the Content-Type header is missing or invalid",
@@ -162,6 +174,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusUnsupportedMediaType,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the server does not support the '%s' media-type supplied by the client",
@@ -180,6 +194,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusBadRequest,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the Accept header is invalid",
@@ -191,6 +207,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusNotAcceptable,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the client does not accept any of the media-types supported by the server",
@@ -208,6 +226,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusInternalServerError,
+			outputMediaType,
+			marshaler,
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the request body could not be read",
@@ -226,6 +246,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusBadRequest,
+			outputMediaType,
+			marshaler,
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the RPC input message could not be unmarshaled from the request body",
@@ -240,12 +262,16 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			httpError(
 				w,
 				httpStatusFromErrorCode(err.Code()),
+				outputMediaType,
+				marshaler,
 				err,
 			)
 		} else {
 			httpError(
 				w,
 				http.StatusInternalServerError,
+				outputMediaType,
+				marshaler,
 				rpcerror.New(
 					rpcerror.Unknown,
 					"the RPC method returned an unrecognized error",
@@ -261,6 +287,8 @@ func (h *postHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpError(
 			w,
 			http.StatusInternalServerError,
+			outputMediaType,
+			marshaler,
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the RPC output message could not be marshaled to the response body",
@@ -318,4 +346,56 @@ func nextPathSegment(p string) (seg, rest string, ok bool) {
 	}
 
 	return p, "", true
+}
+
+// httpError information aboubt an HTTP error to w.
+func httpError(
+	w http.ResponseWriter,
+	status int,
+	mediaType string,
+	marshaler protomime.Marshaler,
+	rpcErr rpcerror.Error,
+) {
+	var protoErr proteanpb.Error
+	if err := rpcerror.ToProto(rpcErr, &protoErr); err != nil {
+		panic(err)
+	}
+
+	data, err := marshaler.Marshal(&protoErr)
+	if err != nil {
+		panic(err)
+	}
+
+	w.Header().Set("Content-Type", mediaType)
+	w.WriteHeader(status)
+	_, _ = w.Write(data)
+}
+
+// httpStatusFromErrorCode returns the default HTTP status to send when an error
+// with the given code occurs.
+func httpStatusFromErrorCode(c rpcerror.Code) int {
+	switch c {
+	case rpcerror.InvalidInput:
+		return http.StatusBadRequest
+	case rpcerror.Unauthenticated:
+		return http.StatusUnauthorized
+	case rpcerror.PermissionDenied:
+		return http.StatusForbidden
+	case rpcerror.NotFound:
+		return http.StatusNotFound
+	case rpcerror.AlreadyExists:
+		return http.StatusConflict
+	case rpcerror.ResourceExhausted:
+		return http.StatusTooManyRequests
+	case rpcerror.FailedPrecondition:
+		return http.StatusBadRequest
+	case rpcerror.Aborted:
+		return http.StatusConflict
+	case rpcerror.Unavailable:
+		return http.StatusServiceUnavailable
+	case rpcerror.NotImplemented:
+		return http.StatusNotImplemented
+	}
+
+	return http.StatusInternalServerError
 }
