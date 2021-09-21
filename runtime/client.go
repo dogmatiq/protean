@@ -3,6 +3,7 @@ package runtime
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -90,13 +91,19 @@ func (c *Client) CallUnary(
 
 	res, err := c.opts.HTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("unable to perform HTTP request: %w", err)
+		return unwrapContextError(
+			err,
+			fmt.Errorf("unable to perform HTTP request: %w", err),
+		)
 	}
 	defer res.Body.Close()
 
 	data, err = io.ReadAll(res.Body)
 	if err != nil {
-		return fmt.Errorf("unable to read HTTP response body: %w", err)
+		return unwrapContextError(
+			err,
+			fmt.Errorf("unable to read HTTP response body: %w", err),
+		)
 	}
 
 	contentType := res.Header.Get("Content-Type")
@@ -137,6 +144,8 @@ func (c *Client) CallUnary(
 func (c *Client) marshal(mediaType string, in proto.Message) ([]byte, error) {
 	m, ok := protomime.MarshalerForMediaType(mediaType)
 	if !ok {
+		// CODE COVERAGE: This condition can not be reproduced as the media
+		// types are validated when they are configured via client options.
 		return nil, fmt.Errorf("unsupported media type (%s)", mediaType)
 	}
 
@@ -173,4 +182,19 @@ func acceptHeader(preferredMediaType string) string {
 	}
 
 	return header.String()
+}
+
+// unwrapContextError checks if err wraps one of the context errors, and if so
+// returns the context error instead. Otherwise, it returns elseErr.
+func unwrapContextError(err, elseErr error) error {
+	for {
+		switch err {
+		case context.DeadlineExceeded, context.Canceled:
+			return err
+		case nil:
+			return elseErr
+		}
+
+		err = errors.Unwrap(err)
+	}
 }
