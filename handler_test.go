@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -305,7 +306,7 @@ var _ = Describe("type Handler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
-					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json"))
+					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json; proto=protean.test.Output"))
 					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
@@ -357,7 +358,7 @@ var _ = Describe("type Handler", func() {
 						handler.ServeHTTP(response, request)
 
 						Expect(response).To(HaveHTTPStatus(http.StatusOK))
-						Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType))
+						Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType+"; proto=protean.test.Output"))
 						expectStandardHeaders(response)
 
 						data, err := io.ReadAll(response.Body)
@@ -421,7 +422,7 @@ var _ = Describe("type Handler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
-					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json"))
+					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "application/json; proto=protean.test.Output"))
 					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
@@ -469,7 +470,7 @@ var _ = Describe("type Handler", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
-					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain"))
+					Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; proto=protean.test.Output"))
 					expectStandardHeaders(response)
 
 					data, err := io.ReadAll(response.Body)
@@ -815,8 +816,15 @@ func expectError(
 	mediaType string,
 	expect rpcerror.Error,
 ) {
+	expectedMediaType := mime.FormatMediaType(
+		mediaType,
+		map[string]string{
+			"proto": "protean.v1.Error",
+		},
+	)
+
 	Expect(response).To(HaveHTTPStatus(status))
-	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType))
+	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", expectedMediaType))
 
 	data, err := io.ReadAll(response.Body)
 	Expect(err).ShouldNot(HaveOccurred())
