@@ -127,6 +127,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						httpCode,
+						"application/json",
 						rpcerror.New(errorCode, "<error>"),
 					)
 					expectStandardHeaders(response)
@@ -157,6 +158,7 @@ var _ = Describe("type Handler", func() {
 				expectError(
 					response,
 					http.StatusInternalServerError,
+					"application/json",
 					rpcerror.New(
 						rpcerror.Unknown,
 						"the RPC method returned an unrecognized error",
@@ -230,6 +232,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
+						"application/json",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the request body could not be read",
@@ -253,6 +256,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
+						"application/json",
 						rpcerror.New(
 							rpcerror.InvalidInput,
 							"the RPC input message is invalid: input data must not be empty",
@@ -277,6 +281,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
+						"application/json",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the RPC input message could not be unmarshaled from the request body",
@@ -296,7 +301,7 @@ var _ = Describe("type Handler", func() {
 					request.Header.Del("Accept")
 				})
 
-				It("responds using the same media type as the request", func() {
+				It("encodes RPC output messages using the same media type as the RPC input message", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
@@ -312,11 +317,34 @@ var _ = Describe("type Handler", func() {
 
 					Expect(out.GetData()).To(Equal("<output>"))
 				})
+
+				It("encodes RPC errors using the same media type as the RPC input message", func() {
+					service.UnaryFunc = func(
+						ctx context.Context,
+						in *testservice.Input,
+					) (*testservice.Output, error) {
+						return nil, errors.New("<error>")
+					}
+
+					handler.ServeHTTP(response, request)
+
+					expectStandardHeaders(response)
+
+					expectError(
+						response,
+						http.StatusInternalServerError,
+						"application/json",
+						rpcerror.New(
+							rpcerror.Unknown,
+							"the RPC method returned an unrecognized error",
+						),
+					)
+				})
 			})
 
 			When("the client prefers the binary protocol buffers format", func() {
 				DescribeTable(
-					"it responds using the binary protocol buffers format",
+					"it encodes RPC output messages using the binary protocol buffers format",
 					func(mediaType string) {
 						request.Header.Set(
 							"Accept",
@@ -344,6 +372,41 @@ var _ = Describe("type Handler", func() {
 					Entry("preferred media type", "application/vnd.google.protobuf"),
 					Entry("alternative media type", "application/x-protobuf"),
 				)
+
+				DescribeTable(
+					"it encodes RPC errors using the binary protocol buffers format",
+					func(mediaType string) {
+						request.Header.Set(
+							"Accept",
+							fmt.Sprintf(
+								"text/xml;q=0.1, text/plain;q=0.5, %s, application/json;q=0.75",
+								mediaType,
+							),
+						)
+
+						service.UnaryFunc = func(
+							ctx context.Context,
+							in *testservice.Input,
+						) (*testservice.Output, error) {
+							return nil, errors.New("<error>")
+						}
+
+						handler.ServeHTTP(response, request)
+
+						expectError(
+							response,
+							http.StatusInternalServerError,
+							mediaType,
+							rpcerror.New(
+								rpcerror.Unknown,
+								"the RPC method returned an unrecognized error",
+							),
+						)
+						expectStandardHeaders(response)
+					},
+					Entry("preferred media type", "application/vnd.google.protobuf"),
+					Entry("alternative media type", "application/x-protobuf"),
+				)
 			})
 
 			When("the client prefers the JSON protocol buffers format", func() {
@@ -354,7 +417,7 @@ var _ = Describe("type Handler", func() {
 					)
 				})
 
-				It("responds using the JSON protocol buffers format", func() {
+				It("encodes RPC output messages using the JSON protocol buffers format", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
@@ -370,6 +433,28 @@ var _ = Describe("type Handler", func() {
 
 					Expect(out.GetData()).To(Equal("<output>"))
 				})
+
+				It("encodes RPC errors using the JSON protocol buffers format", func() {
+					service.UnaryFunc = func(
+						ctx context.Context,
+						in *testservice.Input,
+					) (*testservice.Output, error) {
+						return nil, errors.New("<error>")
+					}
+
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						http.StatusInternalServerError,
+						"application/json",
+						rpcerror.New(
+							rpcerror.Unknown,
+							"the RPC method returned an unrecognized error",
+						),
+					)
+					expectStandardHeaders(response)
+				})
 			})
 
 			When("the client prefers the text protocol buffers format", func() {
@@ -380,7 +465,7 @@ var _ = Describe("type Handler", func() {
 					)
 				})
 
-				It("responds using the JSON protocol buffers format", func() {
+				It("encodes RPC output messages using the text-based protocol buffers format", func() {
 					handler.ServeHTTP(response, request)
 
 					Expect(response).To(HaveHTTPStatus(http.StatusOK))
@@ -396,6 +481,28 @@ var _ = Describe("type Handler", func() {
 
 					Expect(out.GetData()).To(Equal("<output>"))
 				})
+
+				It("encodes RPC errors using the text-based protocol buffers format", func() {
+					service.UnaryFunc = func(
+						ctx context.Context,
+						in *testservice.Input,
+					) (*testservice.Output, error) {
+						return nil, errors.New("<error>")
+					}
+
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						http.StatusInternalServerError,
+						"text/plain",
+						rpcerror.New(
+							rpcerror.Unknown,
+							"the RPC method returned an unrecognized error",
+						),
+					)
+					expectStandardHeaders(response)
+				})
 			})
 
 			When("the client does not accept any of the media types supported by the server", func() {
@@ -409,6 +516,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusNotAcceptable,
+						protomime.TextMediaTypes[0],
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the client does not accept any of the media-types supported by the server",
@@ -441,6 +549,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
+						"text/plain",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the Accept header is invalid",
@@ -464,6 +573,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
+						"application/json",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the server produced an invalid RPC output message",
@@ -485,6 +595,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusInternalServerError,
+						"application/json",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the RPC output message could not be marshaled to the response body",
@@ -507,6 +618,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusNotFound,
+						protomime.TextMediaTypes[0],
 						rpcerror.New(
 							rpcerror.NotFound,
 							message,
@@ -557,7 +669,7 @@ var _ = Describe("type Handler", func() {
 
 		When("the URI path refers to a streaming RPC method", func() {
 			DescribeTable(
-				"it responds with an HTTP '501 Not Found' status",
+				"it responds with an HTTP '501 Not Implemented' status",
 				func(path, message string) {
 					request.URL.Path = path
 
@@ -566,6 +678,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusNotImplemented,
+						protomime.TextMediaTypes[0],
 						rpcerror.New(
 							rpcerror.NotImplemented,
 							message,
@@ -610,6 +723,7 @@ var _ = Describe("type Handler", func() {
 				expectError(
 					response,
 					http.StatusNotImplemented,
+					protomime.TextMediaTypes[0],
 					rpcerror.New(
 						rpcerror.NotImplemented,
 						"the HTTP method must be POST",
@@ -633,6 +747,7 @@ var _ = Describe("type Handler", func() {
 					expectError(
 						response,
 						http.StatusBadRequest,
+						"text/plain",
 						rpcerror.New(
 							rpcerror.Unknown,
 							"the Content-Type header is missing or invalid",
@@ -659,6 +774,7 @@ var _ = Describe("type Handler", func() {
 				expectError(
 					response,
 					http.StatusUnsupportedMediaType,
+					"text/plain",
 					rpcerror.New(
 						rpcerror.Unknown,
 						"the server does not support the 'text/xml' media-type supplied by the client",
@@ -696,16 +812,20 @@ func expectStandardHeaders(
 func expectError(
 	response *httptest.ResponseRecorder,
 	status int,
+	mediaType string,
 	expect rpcerror.Error,
 ) {
 	Expect(response).To(HaveHTTPStatus(status))
-	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; charset=utf-8"))
+	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", mediaType))
 
 	data, err := io.ReadAll(response.Body)
 	Expect(err).ShouldNot(HaveOccurred())
 
+	unmarshaler, ok := protomime.UnmarshalerForMediaType(mediaType)
+	Expect(ok).To(BeTrue())
+
 	var protoErr proteanpb.Error
-	err = protomime.TextUnmarshaler.Unmarshal(data, &protoErr)
+	err = unmarshaler.Unmarshal(data, &protoErr)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	actual, err := rpcerror.FromProto(&protoErr)
