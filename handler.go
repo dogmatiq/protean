@@ -26,14 +26,17 @@ type handler struct {
 }
 
 // HandlerOption is an option that changes the behavior of an HTTP handler.
-type HandlerOption func(*handlerOptions)
-
-type handlerOptions struct {
-}
+type HandlerOption func(*handler)
 
 // NewHandler returns a new HTTP handler that maps HTTP requests to RPC calls.
 func NewHandler(options ...HandlerOption) Handler {
-	return &handler{}
+	h := &handler{}
+
+	for _, opt := range options {
+		opt(h)
+	}
+
+	return h
 }
 
 // RegisterService adds a service to this handler.
