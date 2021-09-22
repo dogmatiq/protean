@@ -7,18 +7,31 @@ import (
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
-	"github.com/dogmatiq/protean/middleware"
 	"github.com/dogmatiq/protean/rpcerror"
 	"github.com/dogmatiq/protean/runtime"
 	"google.golang.org/protobuf/proto"
 )
 
-// servePOST serves an RPC request made using the HTTP Post method.
+// servePOST serves an RPC request made using the HTTP POST method.
 func (h *handler) servePOST(
 	w http.ResponseWriter,
 	r *http.Request,
 	method runtime.Method,
 ) {
+	if r.Method != http.MethodPost {
+		httpError(
+			w,
+			http.StatusNotImplemented,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotImplemented,
+				"the HTTP method must be POST",
+			),
+		)
+		return
+	}
+
 	unmarshaler, inputMediaType, ok, err := unmarshalerByNegotiation(r)
 	if err != nil {
 		httpError(
@@ -99,7 +112,7 @@ func (h *handler) servePOST(
 		return
 	}
 
-	call := method.NewCall(r.Context(), middleware.Validator{})
+	call := h.newRPCCall(r, method)
 	defer call.Done()
 
 	// Send never blocks on unary RPC methods.
@@ -160,6 +173,8 @@ func (h *handler) servePOST(
 		return
 	}
 
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Add("Content-Type", protomime.FormatMediaType(outputMediaType, out))
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(http.StatusOK)

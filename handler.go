@@ -8,6 +8,7 @@ import (
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
+	"github.com/dogmatiq/protean/middleware"
 	"github.com/dogmatiq/protean/rpcerror"
 	"github.com/dogmatiq/protean/runtime"
 )
@@ -69,9 +70,6 @@ func (h *handler) RegisterService(s runtime.Service) {
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-
 	service, method, ok := h.resolveMethod(w, r)
 	if !ok {
 		return
@@ -177,6 +175,11 @@ func (h *handler) resolveMethod(
 	return service, method, true
 }
 
+// newRPCCall starts a new RPC call to the given method.
+func (h *handler) newRPCCall(r *http.Request, method runtime.Method) runtime.Call {
+	return method.NewCall(r.Context(), middleware.Validator{})
+}
+
 // parsePath parses the URI path p and returns the names of the service
 // and method that it maps to.
 func parsePath(p string) (service, method string, ok bool) {
@@ -222,7 +225,7 @@ func nextPathSegment(p string) (seg, rest string, ok bool) {
 	return p, "", true
 }
 
-// httpError information aboubt an HTTP error to w.
+// httpError writes information about an HTTP error to w.
 func httpError(
 	w http.ResponseWriter,
 	status int,
@@ -240,6 +243,8 @@ func httpError(
 		panic(err)
 	}
 
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Type", protomime.FormatMediaType(mediaType, &protoErr))
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(status)
