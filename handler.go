@@ -82,19 +82,56 @@ func (h *handler) RegisterService(s runtime.Service) {
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	method, ok := h.resolveMethod(w, r)
+	service, method, ok := h.resolveMethod(w, r)
 	if !ok {
 		return
 	}
 
-	if !method.InputIsStream() && !method.OutputIsStream() {
-		// Only set the Accept-Post header for unary RPC methods. Other methods
-		// MUST use a websocket.
+	hasStreaming := method.InputIsStream() || method.OutputIsStream()
+
+	if !hasStreaming {
 		w.Header().Set("Accept-Post", acceptPostHeader)
 	}
 
 	if websocket.IsWebSocketUpgrade(r) {
 		h.serveWebSocket(w, r, method)
+	} else if r.Method == http.MethodGet {
+		httpError(
+			w,
+			http.StatusUpgradeRequired,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotImplemented,
+				"the HTTP GET method is only supported for websocket connections",
+			),
+		)
+	} else if hasStreaming {
+		httpError(
+			w,
+			http.StatusNotImplemented,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotImplemented,
+				"the '%s.%s' service does contain an RPC method named '%s', but it uses streaming and therefore must be called via a websocket connection",
+				service.Package(),
+				service.Name(),
+				method.Name(),
+			),
+		)
+	} else if r.Method != http.MethodPost {
+		httpError(
+			w,
+			http.StatusNotImplemented,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotImplemented,
+				"the HTTP %s method is not supported, use POST or a websocket connection",
+				r.Method,
+			),
+		)
 	} else {
 		h.servePOST(w, r, method)
 	}
@@ -107,7 +144,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *handler) resolveMethod(
 	w http.ResponseWriter,
 	r *http.Request,
-) (runtime.Method, bool) {
+) (runtime.Service, runtime.Method, bool) {
 	serviceName, methodName, ok := parsePath(r.URL.Path)
 	if !ok {
 		httpError(
@@ -121,7 +158,7 @@ func (h *handler) resolveMethod(
 			),
 		)
 
-		return nil, false
+		return nil, nil, false
 	}
 
 	service, ok := h.services[serviceName]
@@ -138,7 +175,7 @@ func (h *handler) resolveMethod(
 			),
 		)
 
-		return nil, false
+		return nil, nil, false
 	}
 
 	method, ok := service.MethodByName(methodName)
@@ -156,10 +193,10 @@ func (h *handler) resolveMethod(
 			),
 		)
 
-		return nil, false
+		return nil, nil, false
 	}
 
-	return method, true
+	return service, method, true
 }
 
 // parsePath parses the URI path p and returns the names of the service

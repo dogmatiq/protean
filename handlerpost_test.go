@@ -833,17 +833,17 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 				Entry(
 					"client streaming method",
 					"/protean.test/TestService/ClientStream",
-					"the 'protean.test.TestService' service does contain an RPC method named 'ClientStream', but is not supported by this server because it uses streaming inputs or outputs",
+					"the 'protean.test.TestService' service does contain an RPC method named 'ClientStream', but it uses streaming and therefore must be called via a websocket connection",
 				),
 				Entry(
 					"server streaming method",
 					"/protean.test/TestService/ServerStream",
-					"the 'protean.test.TestService' service does contain an RPC method named 'ServerStream', but is not supported by this server because it uses streaming inputs or outputs",
+					"the 'protean.test.TestService' service does contain an RPC method named 'ServerStream', but it uses streaming and therefore must be called via a websocket connection",
 				),
 				Entry(
 					"bidirectional streaming method",
 					"/protean.test/TestService/BidirectionalStream",
-					"the 'protean.test.TestService' service does contain an RPC method named 'BidirectionalStream', but is not supported by this server because it uses streaming inputs or outputs",
+					"the 'protean.test.TestService' service does contain an RPC method named 'BidirectionalStream', but it uses streaming and therefore must be called via a websocket connection",
 				),
 			)
 		})
