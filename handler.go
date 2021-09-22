@@ -75,51 +75,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	serviceName, methodName, ok := parsePath(r.URL.Path)
+	service, method, ok := h.resolveMethod(w, r)
 	if !ok {
-		httpError(
-			w,
-			http.StatusNotFound,
-			protomime.TextMediaTypes[0],
-			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotFound,
-				"the request URI must follow the '/<package>/<service>/<method>' pattern",
-			),
-		)
-		return
-	}
-
-	service, ok := h.services[serviceName]
-	if !ok {
-		httpError(
-			w,
-			http.StatusNotFound,
-			protomime.TextMediaTypes[0],
-			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotFound,
-				"the server does not provide the '%s' service",
-				serviceName,
-			),
-		)
-		return
-	}
-
-	method, ok := service.MethodByName(methodName)
-	if !ok {
-		httpError(
-			w,
-			http.StatusNotFound,
-			protomime.TextMediaTypes[0],
-			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotFound,
-				"the '%s' service does not contain an RPC method named '%s'",
-				serviceName,
-				methodName,
-			),
-		)
 		return
 	}
 
@@ -131,9 +88,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"the '%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs",
-				serviceName,
-				methodName,
+				"the '%s.%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs",
+				service.Package(),
+				service.Name(),
+				method.Name(),
 			),
 		)
 		return
@@ -302,6 +260,68 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
+}
+
+// resolveMethod looks up the RPC method based on the request URL.
+//
+// It returns false if the RPC method can not be found, in which case a 404 Not
+// Found error has already been written to w.
+func (h *handler) resolveMethod(
+	w http.ResponseWriter,
+	r *http.Request,
+) (runtime.Service, runtime.Method, bool) {
+	serviceName, methodName, ok := parsePath(r.URL.Path)
+	if !ok {
+		httpError(
+			w,
+			http.StatusNotFound,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotFound,
+				"the request URI must follow the '/<package>/<service>/<method>' pattern",
+			),
+		)
+
+		return nil, nil, false
+	}
+
+	service, ok := h.services[serviceName]
+	if !ok {
+		httpError(
+			w,
+			http.StatusNotFound,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotFound,
+				"the server does not provide the '%s' service",
+				serviceName,
+			),
+		)
+
+		return nil, nil, false
+	}
+
+	method, ok := service.MethodByName(methodName)
+	if !ok {
+		httpError(
+			w,
+			http.StatusNotFound,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotFound,
+				"the '%s' service does not contain an RPC method named '%s'",
+				serviceName,
+				methodName,
+			),
+		)
+
+		return nil, nil, false
+	}
+
+	return service, method, true
 }
 
 // parsePath parses the URI path p and returns the names of the service
