@@ -115,6 +115,15 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.servePOST(w, r, method)
+}
+
+// servePOST serves an RPC request made using the HTTP Post method.
+func (h *handler) servePOST(
+	w http.ResponseWriter,
+	r *http.Request,
+	method runtime.Method,
+) {
 	unmarshaler, inputMediaType, ok, err := unmarshalerByNegotiation(r)
 	if err != nil {
 		httpError(
