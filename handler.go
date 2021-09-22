@@ -11,6 +11,7 @@ import (
 	"github.com/dogmatiq/protean/middleware"
 	"github.com/dogmatiq/protean/rpcerror"
 	"github.com/dogmatiq/protean/runtime"
+	"github.com/gorilla/websocket"
 )
 
 // Handler is an http.Handler that maps HTTP requests to RPC calls.
@@ -24,13 +25,19 @@ type Handler interface {
 type handler struct {
 	services     map[string]runtime.Service
 	interceptor  middleware.ServerInterceptor
+	upgrader     websocket.Upgrader
 	maxInputSize int
 }
 
 // NewHandler returns a new HTTP handler that maps HTTP requests to RPC calls.
 func NewHandler(options ...HandlerOption) Handler {
 	h := &handler{
-		interceptor:  middleware.Validator{},
+		interceptor: middleware.Validator{},
+		upgrader: websocket.Upgrader{
+			Subprotocols:      webSocketSubProtocols,
+			Error:             webSocketError,
+			EnableCompression: true,
+		},
 		maxInputSize: DefaultMaxRPCInputSize,
 	}
 
@@ -75,47 +82,22 @@ func (h *handler) RegisterService(s runtime.Service) {
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	service, method, ok := h.resolveMethod(w, r)
+	method, ok := h.resolveMethod(w, r)
 	if !ok {
 		return
 	}
 
-	if method.InputIsStream() || method.OutputIsStream() {
-		httpError(
-			w,
-			http.StatusNotImplemented,
-			protomime.TextMediaTypes[0],
-			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotImplemented,
-				"the '%s.%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs",
-				service.Package(),
-				service.Name(),
-				method.Name(),
-			),
-		)
-		return
+	if !method.InputIsStream() && !method.OutputIsStream() {
+		// Only set the Accept-Post header for unary RPC methods. Other methods
+		// MUST use a websocket.
+		w.Header().Set("Accept-Post", acceptPostHeader)
 	}
 
-	// Set the Accept-Post header only once we've verified that the requested
-	// method exists and is supported.
-	w.Header().Set("Accept-Post", acceptPostHeader)
-
-	if r.Method != http.MethodPost {
-		httpError(
-			w,
-			http.StatusMethodNotAllowed,
-			protomime.TextMediaTypes[0],
-			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotImplemented,
-				"the HTTP method must be POST",
-			),
-		)
-		return
+	if websocket.IsWebSocketUpgrade(r) {
+		h.serveWebSocket(w, r, method)
+	} else {
+		h.servePOST(w, r, method)
 	}
-
-	h.servePOST(w, r, method)
 }
 
 // resolveMethod looks up the RPC method based on the request URL.
@@ -125,7 +107,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *handler) resolveMethod(
 	w http.ResponseWriter,
 	r *http.Request,
-) (runtime.Service, runtime.Method, bool) {
+) (runtime.Method, bool) {
 	serviceName, methodName, ok := parsePath(r.URL.Path)
 	if !ok {
 		httpError(
@@ -139,7 +121,7 @@ func (h *handler) resolveMethod(
 			),
 		)
 
-		return nil, nil, false
+		return nil, false
 	}
 
 	service, ok := h.services[serviceName]
@@ -156,7 +138,7 @@ func (h *handler) resolveMethod(
 			),
 		)
 
-		return nil, nil, false
+		return nil, false
 	}
 
 	method, ok := service.MethodByName(methodName)
@@ -174,10 +156,10 @@ func (h *handler) resolveMethod(
 			),
 		)
 
-		return nil, nil, false
+		return nil, false
 	}
 
-	return service, method, true
+	return method, true
 }
 
 // parsePath parses the URI path p and returns the names of the service
