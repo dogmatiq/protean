@@ -62,7 +62,7 @@ func webSocketError(
 ) {
 	httpError(
 		w,
-		http.StatusNotImplemented,
+		code,
 		protomime.TextMediaTypes[0],
 		protomime.TextMarshaler,
 		rpcerror.New(
