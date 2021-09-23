@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
@@ -26,6 +27,7 @@ type handler struct {
 	services     map[string]runtime.Service
 	interceptor  middleware.ServerInterceptor
 	upgrader     websocket.Upgrader
+	heartbeat    time.Duration
 	maxInputSize int
 }
 
@@ -38,6 +40,7 @@ func NewHandler(options ...HandlerOption) Handler {
 			Error:             webSocketError,
 			EnableCompression: true,
 		},
+		heartbeat:    DefaultHeartbeatInterval,
 		maxInputSize: DefaultMaxRPCInputSize,
 	}
 
