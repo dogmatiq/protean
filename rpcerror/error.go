@@ -77,6 +77,11 @@ func (e Error) Details() (details proto.Message, ok bool, err error) {
 	return d, true, err
 }
 
+// Unwrap returns the error that caused this RPC error, if known.
+func (e Error) Unwrap() error {
+	return e.cause
+}
+
 // WithDetails returns a copy of e that includes some application-defined
 // information about the error.
 //

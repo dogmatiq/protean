@@ -45,6 +45,24 @@ var _ = Describe("type Error", func() {
 		})
 	})
 
+	Describe("func Unwrap()", func() {
+		It("returns the causal error", func() {
+			cause := errors.New("<cause>")
+			err := New(Unknown, "<message>").
+				WithCause(cause)
+
+			Expect(err.Unwrap()).To(Equal(cause))
+			Expect(errors.Unwrap(err)).To(Equal(cause))
+		})
+
+		It("returns nil if there is no cause", func() {
+			err := New(Unknown, "<message>")
+
+			Expect(err.Unwrap()).To(BeNil())
+			Expect(errors.Unwrap(err)).To(BeNil())
+		})
+	})
+
 	Describe("func WithDetails()", func() {
 		It("panics if the error already has details", func() {
 			details := &proteanpb.SupportedMediaTypes{}
