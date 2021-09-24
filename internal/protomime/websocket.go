@@ -34,9 +34,9 @@ func MediaTypeFromWebSocketProtocol(p string) (string, bool) {
 	return p[:n] + "/" + p[n+1:], true
 }
 
-// webSocketProtocolFromMediaType returns the websocket sub-protocol name to use
+// WebSocketProtocolFromMediaType returns the websocket sub-protocol name to use
 // to transport messages of the given media type.
-func webSocketProtocolFromMediaType(mediaType string) string {
+func WebSocketProtocolFromMediaType(mediaType string) string {
 	return webSocketProtocolPrefix + "+" + strings.Replace(mediaType, "/", ".", -1)
 }
 
@@ -44,7 +44,7 @@ func init() {
 	for _, mediaType := range MediaTypes {
 		WebSocketProtocols = append(
 			WebSocketProtocols,
-			webSocketProtocolFromMediaType(mediaType),
+			WebSocketProtocolFromMediaType(mediaType),
 		)
 	}
 }

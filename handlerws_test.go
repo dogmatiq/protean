@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"time"
 
 	. "github.com/dogmatiq/protean"
@@ -12,7 +13,9 @@ import (
 	"github.com/dogmatiq/protean/internal/protomime"
 	"github.com/dogmatiq/protean/internal/testservice"
 	"github.com/dogmatiq/protean/rpcerror"
+	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 )
@@ -68,6 +71,61 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 	})
 
 	Describe("func ServeHTTP()", func() {
+		Context("sub-protocol negotiation", func() {
+			When("the client does specifies a supported sub-protocol", func() {
+				DescribeTable(
+					"it uses that sub-protocol",
+					func(protocol string) {
+						conn, res, err := websocket.DefaultDialer.DialContext(
+							ctx,
+							strings.Replace(server.URL, "http", "ws", -1)+"/protean.test/TestService/Unary",
+							http.Header{
+								"Sec-WebSocket-Protocol": {protocol},
+							},
+						)
+						Expect(err).ShouldNot(HaveOccurred())
+						defer conn.Close()
+
+						Expect(res).To(HaveHTTPHeaderWithValue("Sec-WebSocket-Protocol", protocol))
+					},
+					Entry("binary #1", "protean.v1+application.vnd.google.protobuf"),
+					Entry("binary #2", "protean.v1+application.x-protobuf"),
+					Entry("JSON", "protean.v1+application.json"),
+					Entry("text", "protean.v1+text.plain"),
+				)
+			})
+
+			When("the client does not specify a sub-protocol", func() {
+				It("defaults to the JSON sub-protocol", func() {
+					conn, res, err := websocket.DefaultDialer.DialContext(
+						ctx,
+						strings.Replace(server.URL, "http", "ws", -1)+"/protean.test/TestService/Unary",
+						nil,
+					)
+					Expect(err).ShouldNot(HaveOccurred())
+					defer conn.Close()
+
+					Expect(res).To(HaveHTTPHeaderWithValue("Sec-WebSocket-Protocol", "protean.v1+application.json"))
+				})
+			})
+
+			When("the client specifies an unsupported sub-protocol", func() {
+				It("defaults to the JSON sub-protocol", func() {
+					conn, res, err := websocket.DefaultDialer.DialContext(
+						ctx,
+						strings.Replace(server.URL, "http", "ws", -1)+"/protean.test/TestService/Unary",
+						http.Header{
+							"Sec-WebSocket-Protocol": {"garbage"},
+						},
+					)
+					Expect(err).ShouldNot(HaveOccurred())
+					defer conn.Close()
+
+					Expect(res).To(HaveHTTPHeaderWithValue("Sec-WebSocket-Protocol", "protean.v1+application.json"))
+				})
+			})
+		})
+
 		When("the websocket upgrade fails", func() {
 			It("responds with a text-based RPC error", func() {
 				req, err := http.NewRequestWithContext(
@@ -86,22 +144,30 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 				res, err := http.DefaultClient.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				Expect(res).To(HaveHTTPStatus(http.StatusMethodNotAllowed))
-				Expect(res).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; charset=utf-8; x-proto=protean.v1.Error"))
-
-				data, err := io.ReadAll(res.Body)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				var protoErr proteanpb.Error
-				err = protomime.TextUnmarshaler.Unmarshal(data, &protoErr)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				actual, err := rpcerror.FromProto(&protoErr)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(actual.Code()).To(Equal(rpcerror.Unknown))
-				Expect(actual.Message()).To(Equal("websocket: the client is not using the websocket protocol: request method is not GET"))
+				expectWebSocketError(res, "websocket: the client is not using the websocket protocol: request method is not GET")
 			})
 		})
 	})
 })
+
+// expectWebSocketError asserts that the response describes the expected error.
+func expectWebSocketError(
+	response *http.Response,
+	message string,
+) {
+	Expect(response).To(HaveHTTPStatus(http.StatusMethodNotAllowed))
+	Expect(response).To(HaveHTTPHeaderWithValue("Content-Type", "text/plain; charset=utf-8; x-proto=protean.v1.Error"))
+
+	data, err := io.ReadAll(response.Body)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	var protoErr proteanpb.Error
+	err = protomime.TextUnmarshaler.Unmarshal(data, &protoErr)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	actual, err := rpcerror.FromProto(&protoErr)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	Expect(actual.Code()).To(Equal(rpcerror.Unknown))
+	Expect(actual.Message()).To(Equal(message))
+}
