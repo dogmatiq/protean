@@ -36,7 +36,7 @@ func NewHandler(options ...HandlerOption) Handler {
 	h := &handler{
 		interceptor: middleware.Validator{},
 		upgrader: websocket.Upgrader{
-			Subprotocols:      webSocketSubProtocols,
+			Subprotocols:      protomime.WebSocketProtocols,
 			Error:             webSocketError,
 			EnableCompression: true,
 		},

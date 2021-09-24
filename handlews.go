@@ -71,11 +71,3 @@ func webSocketError(
 		),
 	)
 }
-
-// webSocketSubProtocols is the set of supported websocket subprotocols, in
-// order of preference.
-var webSocketSubProtocols = []string{
-	"protean.v1+binary",
-	"protean.v1+json",
-	"protean.v1+text",
-}
