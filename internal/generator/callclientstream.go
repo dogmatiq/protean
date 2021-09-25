@@ -88,15 +88,27 @@ func appendClientStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 
 		// recv method
 		[]jen.Code{
+			jen.If(
+				jen.Id("c").Dot("service").Op("==").Nil(),
+			).Block(
+				jen.Return(
+					jen.Nil(),
+					jen.False(),
+					jen.Nil(),
+				),
+			),
+			jen.Line(),
 			jen.Id("out").Op(",").Id("err").Op(":=").
 				Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
 				Call(
 					jen.Id("c").Dot("ctx"),
 					jen.Id("c").Dot("in"),
 				),
+			jen.Id("c").Dot("service").Op("=").Nil(),
+			jen.Line(),
 			jen.Return(
 				jen.Id("out"),
-				jen.False(),
+				jen.Id("err").Op("==").Nil(),
 				jen.Id("err"),
 			),
 		},

@@ -90,43 +90,43 @@ func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
 							jen.Nil(),
 						),
 					),
-				),
-				jen.Line(),
-				jen.Id("out").Op(",").Id("err").Op(":=").
-					Id("c").Dot("interceptor").Dot("InterceptUnaryRPC").Call(
-					jen.Line().Id("c").Dot("ctx"),
-					jen.Line().Qual(middlewarePackage, "UnaryServerInfo").Values(
-						jen.Dict{
-							jen.Id("Package"): jen.Lit(s.FileDesc.GetPackage()),
-							jen.Id("Service"): jen.Lit(s.ServiceDesc.GetName()),
-							jen.Id("Method"):  jen.Lit(s.MethodDesc.GetName()),
-						},
-					),
-					jen.Line().Id("in"),
-					jen.Line().Func().
-						Params(
-							jen.Id("ctx").Qual("context", "Context"),
-						).
-						Params(
-							jen.Qual(protoPackage, "Message"),
-							jen.Error(),
-						).
-						Block(
-							jen.Return(
-								jen.Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
-									Call(
-										jen.Id("ctx"),
-										jen.Id("in"),
-									),
-							),
-						),
 					jen.Line(),
-				),
-				jen.Line(),
-				jen.Return(
-					jen.Id("out"),
-					jen.False(),
-					jen.Id("err"),
+					jen.Id("out").Op(",").Id("err").Op(":=").
+						Id("c").Dot("interceptor").Dot("InterceptUnaryRPC").Call(
+						jen.Line().Id("c").Dot("ctx"),
+						jen.Line().Qual(middlewarePackage, "UnaryServerInfo").Values(
+							jen.Dict{
+								jen.Id("Package"): jen.Lit(s.FileDesc.GetPackage()),
+								jen.Id("Service"): jen.Lit(s.ServiceDesc.GetName()),
+								jen.Id("Method"):  jen.Lit(s.MethodDesc.GetName()),
+							},
+						),
+						jen.Line().Id("in"),
+						jen.Line().Func().
+							Params(
+								jen.Id("ctx").Qual("context", "Context"),
+							).
+							Params(
+								jen.Qual(protoPackage, "Message"),
+								jen.Error(),
+							).
+							Block(
+								jen.Return(
+									jen.Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
+										Call(
+											jen.Id("ctx"),
+											jen.Id("in"),
+										),
+								),
+							),
+						jen.Line(),
+					),
+					jen.Line(),
+					jen.Return(
+						jen.Id("out"),
+						jen.Id("err").Op("==").Nil(),
+						jen.Id("err"),
+					),
 				),
 			),
 		},
