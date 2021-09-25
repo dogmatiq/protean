@@ -27,6 +27,7 @@ func (s *Stub) ServerStream(ctx context.Context, in *Input, out chan<- *Output) 
 		return s.ServerStreamFunc(ctx, in, out)
 	}
 
+	close(out)
 	return nil
 }
 
@@ -64,6 +65,7 @@ func (s *Stub) BidirectionalStream(ctx context.Context, in <-chan *Input, out ch
 			return ctx.Err()
 		case _, ok := <-in:
 			if !ok {
+				close(out)
 				return nil
 			}
 		}

@@ -68,6 +68,24 @@ func genServiceInterfaceMethods(s *scope.Service) ([]jen.Code, error) {
 			)
 		}
 
+		if m.GetClientStreaming() {
+			methods = append(
+				methods,
+				jen.Comment(""),
+				jen.Comment("The caller MAY produce infinite input messages, however it SHOULD close"),
+				jen.Comment("the inputs channel if no more input messages will be supplied."),
+			)
+		}
+
+		if m.GetServerStreaming() {
+			methods = append(
+				methods,
+				jen.Comment(""),
+				jen.Comment("The caller MUST NOT close the outputs channel. The implementation MUST"),
+				jen.Comment("close the outputs channel before returning."),
+			)
+		}
+
 		methods = append(
 			methods,
 			jen.Id(m.GetName()).

@@ -22,7 +22,7 @@ func appendBidirectionalStreamingRuntimeCallConstructor(code *jen.File, s *scope
 					jen.Id("service"),
 					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType)),
 					jen.Make(jen.Chan().Op("*").Qual(outputPkg, outputType)),
-					jen.Nil(),
+					jen.Make(jen.Chan().Error(), jen.Lit(1)),
 				),
 			jen.Go().Id("c").Dot("run").Call(),
 			jen.Return(
@@ -48,7 +48,7 @@ func appendBidirectionalStreamingRuntimeCallImpl(code *jen.File, s *scope.Method
 			jen.Id("service").Id(s.ServiceInterface()),
 			jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
 			jen.Id("out").Chan().Op("*").Qual(outputPkg, outputType),
-			jen.Id("err").Id("error"),
+			jen.Id("err").Chan().Error(),
 		},
 
 		// send method
@@ -106,20 +106,19 @@ func appendBidirectionalStreamingRuntimeCallImpl(code *jen.File, s *scope.Method
 			jen.Return(
 				jen.Nil(),
 				jen.False(),
-				jen.Id("c").Dot("err"),
+				jen.Op("<-").Id("c").Dot("err"),
 			),
 		},
 
 		// run method
 		[]jen.Code{
-			jen.Id("c").Dot("err").Op("=").
+			jen.Id("c").Dot("err").Op("<-").
 				Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
 				Call(
 					jen.Id("c").Dot("ctx"),
 					jen.Id("c").Dot("in"),
 					jen.Id("c").Dot("out"),
 				),
-			jen.Close(jen.Id("c").Dot("out")),
 		},
 	)
 }

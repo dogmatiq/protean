@@ -21,8 +21,8 @@ func appendServerStreamingRuntimeCallConstructor(code *jen.File, s *scope.Method
 					jen.Id("ctx"),
 					jen.Id("service"),
 					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType), jen.Lit(1)),
-					jen.Make(jen.Chan().Op("*").Qual(outputPkg, outputType), jen.Lit(1)),
-					jen.Nil(),
+					jen.Make(jen.Chan().Op("*").Qual(outputPkg, outputType)),
+					jen.Make(jen.Chan().Error(), jen.Lit(1)),
 				),
 			jen.Go().Id("c").Dot("run").Call(),
 			jen.Return(
@@ -48,7 +48,7 @@ func appendServerStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 			jen.Id("service").Id(s.ServiceInterface()),
 			jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
 			jen.Id("out").Chan().Op("*").Qual(outputPkg, outputType),
-			jen.Id("err").Id("error"),
+			jen.Id("err").Chan().Id("error"),
 		},
 
 		// send method
@@ -91,7 +91,7 @@ func appendServerStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 			jen.Return(
 				jen.Nil(),
 				jen.False(),
-				jen.Id("c").Dot("err"),
+				jen.Op("<-").Id("c").Dot("err"),
 			),
 		},
 
@@ -101,12 +101,12 @@ func appendServerStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 				jen.Case(
 					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
 				).Block(
-					jen.Id("c").Dot("err").Op("=").Id("c").Dot("ctx").Dot("Err").Call(),
+					jen.Id("c").Dot("err").Op("<-").Id("c").Dot("ctx").Dot("Err").Call(),
 				),
 				jen.Case(
 					jen.Id("in").Op(":=").Op("<-").Id("c").Dot("in"),
 				).Block(
-					jen.Id("c").Dot("err").Op("=").
+					jen.Id("c").Dot("err").Op("<-").
 						Id("c").Dot("service").Dot(s.MethodDesc.GetName()).
 						Call(
 							jen.Id("c").Dot("ctx"),
@@ -115,8 +115,6 @@ func appendServerStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 						),
 				),
 			),
-			jen.Line(),
-			jen.Close(jen.Id("c").Dot("out")),
 		},
 	)
 }
