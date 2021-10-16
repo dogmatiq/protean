@@ -20,16 +20,17 @@ import (
 	"github.com/onsi/gomega/format"
 )
 
-var _ = Describe("type Handler (HTTP POST)", func() {
+var _ = Describe("type Handler (websocket)", func() {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
-		// input   *testservice.Input
+		// input        *testservice.Input
 		output  *testservice.Output
 		handler Handler
-		// invoked bool
-		service *testservice.Stub
-		server  *httptest.Server
+		// invoked      bool
+		service      *testservice.Stub
+		server       *httptest.Server
+		webSocketURL string
 	)
 
 	BeforeEach(func() {
@@ -62,6 +63,8 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 		testservice.RegisterProteanTestService(handler, service)
 
 		server = httptest.NewServer(handler)
+
+		webSocketURL = strings.Replace(server.URL, "http", "ws", -1)
 	})
 
 	AfterEach(func() {
@@ -78,7 +81,7 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 					func(protocol string) {
 						conn, res, err := websocket.DefaultDialer.DialContext(
 							ctx,
-							strings.Replace(server.URL, "http", "ws", -1)+"/protean.test/TestService/Unary",
+							webSocketURL+"/protean.test/TestService/Unary",
 							http.Header{
 								"Sec-WebSocket-Protocol": {protocol},
 							},
@@ -99,7 +102,7 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 				It("defaults to the JSON sub-protocol", func() {
 					conn, res, err := websocket.DefaultDialer.DialContext(
 						ctx,
-						strings.Replace(server.URL, "http", "ws", -1)+"/protean.test/TestService/Unary",
+						webSocketURL+"/protean.test/TestService/Unary",
 						nil,
 					)
 					Expect(err).ShouldNot(HaveOccurred())
@@ -113,7 +116,7 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 				It("defaults to the JSON sub-protocol", func() {
 					conn, res, err := websocket.DefaultDialer.DialContext(
 						ctx,
-						strings.Replace(server.URL, "http", "ws", -1)+"/protean.test/TestService/Unary",
+						webSocketURL+"/protean.test/TestService/Unary",
 						http.Header{
 							"Sec-WebSocket-Protocol": {"garbage"},
 						},
@@ -145,6 +148,8 @@ var _ = Describe("type Handler (HTTP POST)", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				expectWebSocketError(res, "websocket: the client is not using the websocket protocol: request method is not GET")
+
+				// Expect(invoked).To(BeFalse())
 			})
 		})
 	})
