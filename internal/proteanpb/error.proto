@@ -21,4 +21,3 @@ message Error {
 message SupportedMediaTypes {
   repeated string media_types = 1;
 }
-
