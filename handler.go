@@ -101,6 +101,37 @@ func (h *handler) RegisterService(s runtime.Service) {
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		if websocket.IsWebSocketUpgrade(r) {
+			h.serveWebSocket(w, r)
+		} else if r.Method == http.MethodGet {
+			httpError(
+				w,
+				http.StatusUpgradeRequired,
+				protomime.TextMediaTypes[0],
+				protomime.TextMarshaler,
+				rpcerror.New(
+					rpcerror.NotImplemented,
+					"the HTTP GET method is only supported for websocket connections, establish a websocket connection or POST to /<package>/<service>/<method>",
+				),
+			)
+		} else {
+			httpError(
+				w,
+				http.StatusMethodNotAllowed,
+				protomime.TextMediaTypes[0],
+				protomime.TextMarshaler,
+				rpcerror.New(
+					rpcerror.NotImplemented,
+					"the HTTP %s method is not supported at this path, establish a websocket connection or POST to /<package>/<service>/<method>",
+					r.Method,
+				),
+			)
+		}
+
+		return
+	}
+
 	service, method, ok := h.resolveMethod(w, r)
 	if !ok {
 		return
@@ -112,20 +143,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Accept-Post", acceptPostHeader)
 	}
 
-	if websocket.IsWebSocketUpgrade(r) {
-		h.serveWebSocket(w, r, method)
-	} else if r.Method == http.MethodGet {
-		httpError(
-			w,
-			http.StatusUpgradeRequired,
-			protomime.TextMediaTypes[0],
-			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotImplemented,
-				"the HTTP GET method is only supported for websocket connections",
-			),
-		)
-	} else if hasStreaming {
+	if hasStreaming {
 		httpError(
 			w,
 			http.StatusNotImplemented,
@@ -133,7 +151,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"the '%s.%s' service does contain an RPC method named '%s', but it uses streaming and therefore must be called via a websocket connection",
+				"the '%s.%s' service contains an RPC method named '%s', but it requires streaming and therefore must be called by establishing a websocket connection at /",
 				service.Package(),
 				service.Name(),
 				method.Name(),
@@ -142,12 +160,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method != http.MethodPost {
 		httpError(
 			w,
-			http.StatusNotImplemented,
+			http.StatusMethodNotAllowed,
 			protomime.TextMediaTypes[0],
 			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"the HTTP %s method is not supported, use POST or a websocket connection",
+				"the HTTP %s method is not supported at this path, use POST or a establish websocket connection at /",
 				r.Method,
 			),
 		)
@@ -173,7 +191,7 @@ func (h *handler) resolveMethod(
 			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"the request URI must follow the '/<package>/<service>/<method>' pattern",
+				"establish a websocket connection at / or POST to /<package>/<service>/<method>",
 			),
 		)
 

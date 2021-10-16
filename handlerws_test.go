@@ -81,7 +81,7 @@ var _ = Describe("type Handler (websocket)", func() {
 					func(protocol string) {
 						conn, res, err := websocket.DefaultDialer.DialContext(
 							ctx,
-							webSocketURL+"/protean.test/TestService/Unary",
+							webSocketURL,
 							http.Header{
 								"Sec-WebSocket-Protocol": {protocol},
 							},
@@ -102,7 +102,7 @@ var _ = Describe("type Handler (websocket)", func() {
 				It("defaults to the JSON sub-protocol", func() {
 					conn, res, err := websocket.DefaultDialer.DialContext(
 						ctx,
-						webSocketURL+"/protean.test/TestService/Unary",
+						webSocketURL,
 						nil,
 					)
 					Expect(err).ShouldNot(HaveOccurred())
@@ -116,7 +116,7 @@ var _ = Describe("type Handler (websocket)", func() {
 				It("defaults to the JSON sub-protocol", func() {
 					conn, res, err := websocket.DefaultDialer.DialContext(
 						ctx,
-						webSocketURL+"/protean.test/TestService/Unary",
+						webSocketURL,
 						http.Header{
 							"Sec-WebSocket-Protocol": {"garbage"},
 						},
@@ -134,7 +134,7 @@ var _ = Describe("type Handler (websocket)", func() {
 				req, err := http.NewRequestWithContext(
 					ctx,
 					http.MethodPost, // expects GET
-					server.URL+"/protean.test/TestService/Unary",
+					server.URL,
 					nil,
 				)
 				Expect(err).ShouldNot(HaveOccurred())
