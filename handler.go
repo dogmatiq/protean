@@ -36,8 +36,24 @@ func NewHandler(options ...HandlerOption) Handler {
 	h := &handler{
 		interceptor: middleware.Validator{},
 		upgrader: websocket.Upgrader{
-			Subprotocols:      protomime.WebSocketProtocols,
-			Error:             webSocketError,
+			Subprotocols: protomime.WebSocketProtocols,
+			Error: func(
+				w http.ResponseWriter,
+				r *http.Request,
+				code int,
+				reason error,
+			) {
+				httpError(
+					w,
+					code,
+					protomime.TextMediaTypes[0],
+					protomime.TextMarshaler,
+					rpcerror.New(
+						rpcerror.Unknown,
+						reason.Error(),
+					),
+				)
+			},
 			EnableCompression: true,
 		},
 		heartbeat:    DefaultHeartbeatInterval,
