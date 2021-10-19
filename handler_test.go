@@ -621,7 +621,7 @@ var _ = Describe("type Handler", func() {
 						http.StatusNotFound,
 						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
-							rpcerror.NotFound,
+							rpcerror.NotImplemented,
 							message,
 						),
 					)

@@ -132,7 +132,7 @@ func (h *handler) resolveMethod(
 			protomime.TextMediaTypes[0],
 			protomime.TextMarshaler,
 			rpcerror.New(
-				rpcerror.NotFound,
+				rpcerror.NotImplemented,
 				"the request URI must follow the '/<package>/<service>/<method>' pattern",
 			),
 		)
@@ -148,7 +148,7 @@ func (h *handler) resolveMethod(
 			protomime.TextMediaTypes[0],
 			protomime.TextMarshaler,
 			rpcerror.New(
-				rpcerror.NotFound,
+				rpcerror.NotImplemented,
 				"the server does not provide the '%s' service",
 				serviceName,
 			),
@@ -165,7 +165,7 @@ func (h *handler) resolveMethod(
 			protomime.TextMediaTypes[0],
 			protomime.TextMarshaler,
 			rpcerror.New(
-				rpcerror.NotFound,
+				rpcerror.NotImplemented,
 				"the '%s' service does not contain an RPC method named '%s'",
 				serviceName,
 				methodName,
