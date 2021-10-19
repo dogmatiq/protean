@@ -29,6 +29,7 @@ var _ = Describe("type Code", func() {
 				Expect(code.String()).To(Equal(expect))
 			},
 			Entry("Unknown", Unknown, "unknown"),
+			Entry("DeadlineExceeded", DeadlineExceeded, "deadline exceeded"),
 			Entry("InvalidInput", InvalidInput, "invalid input"),
 			Entry("Unauthenticated", Unauthenticated, "unauthenticated"),
 			Entry("PermissionDenied", PermissionDenied, "permission denied"),
