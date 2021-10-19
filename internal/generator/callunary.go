@@ -20,6 +20,7 @@ func appendUnaryRuntimeCallConstructor(code *jen.File, s *scope.Method) {
 					jen.Id("service"),
 					jen.Id("interceptor"),
 					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType), jen.Lit(1)),
+					jen.Nil(), // err
 				),
 			),
 		},
@@ -41,6 +42,7 @@ func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
 			jen.Id("service").Id(s.ServiceInterface()),
 			jen.Id("interceptor").Qual(middlewarePackage, "ServerInterceptor"),
 			jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
+			jen.Id("err").Error(),
 		},
 
 		// send method
@@ -74,10 +76,10 @@ func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
 				jen.Case(
 					jen.Op("<-").Id("c").Dot("ctx").Dot("Done").Call(),
 				).Block(
+					jen.Id("c").Dot("err").Op("=").Id("c").Dot("ctx").Dot("Err").Call(),
 					jen.Return(
 						jen.Nil(),
 						jen.False(),
-						jen.Id("c").Dot("ctx").Dot("Err").Call(),
 					),
 				),
 				jen.Case(
@@ -87,7 +89,6 @@ func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
 						jen.Return(
 							jen.Nil(),
 							jen.False(),
-							jen.Nil(),
 						),
 					),
 					jen.Line(),
@@ -122,13 +123,28 @@ func appendUnaryRuntimeCallImpl(code *jen.File, s *scope.Method) {
 						jen.Line(),
 					),
 					jen.Line(),
+					jen.Id("c").Dot("service").Op("=").Nil(),
+					jen.Id("c").Dot("err").Op("=").Id("err"),
+					jen.Line(),
 					jen.Return(
 						jen.Id("out"),
 						jen.Id("err").Op("==").Nil(),
-						jen.Id("err"),
 					),
 				),
 			),
+		},
+
+		// wait method
+		[]jen.Code{
+			jen.If(
+				jen.Id("c").Dot("service").Op("==").Nil(),
+			).Block(
+				jen.Return(
+					jen.Id("c").Dot("err"),
+				),
+			),
+			jen.Line(),
+			jen.Panic(jen.Lit("Wait() called before Recv() returned false")),
 		},
 
 		// run method

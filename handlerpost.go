@@ -132,8 +132,9 @@ func (h *handler) servePOST(
 		return
 	}
 
-	out, _, err := call.Recv()
-	if err != nil {
+	out, _ := call.Recv()
+
+	if err := call.Wait(); err != nil {
 		if err, ok := err.(rpcerror.Error); ok {
 			httpError(
 				w,

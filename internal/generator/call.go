@@ -37,7 +37,7 @@ func appendRuntimeCallConstructor(
 func appendRuntimeCallImpl(
 	code *jen.File,
 	s *scope.Method,
-	fields, sendMethod, doneMethod, recvMethod, runMethod []jen.Code,
+	fields, sendMethod, doneMethod, recvMethod, waitMethod, runMethod []jen.Code,
 ) {
 	code.Commentf(
 		"%s is a runtime.Call implementation for the %s.%s.%s() method.",
@@ -80,9 +80,18 @@ func appendRuntimeCallImpl(
 		Params(
 			jen.Qual(protoPackage, "Message"),
 			jen.Bool(),
-			jen.Error(),
 		).
 		Block(recvMethod...)
+
+	code.Line()
+	code.Func().
+		Params(recv).
+		Id("Wait").
+		Params().
+		Params(
+			jen.Error(),
+		).
+		Block(waitMethod...)
 
 	if len(runMethod) != 0 {
 		code.Line()

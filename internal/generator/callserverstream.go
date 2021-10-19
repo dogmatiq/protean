@@ -78,19 +78,16 @@ func appendServerStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 
 		// recv method
 		[]jen.Code{
-			jen.If(
-				jen.Id("out").Op(",").Id("ok").Op(":=").Op("<-").Id("c").Dot("out"),
-				jen.Id("ok"),
-			).Block(
-				jen.Return(
-					jen.Id("out"),
-					jen.True(),
-					jen.Nil(),
-				),
-			),
+			jen.Id("out").Op(",").Id("ok").Op(":=").Op("<-").Id("c").Dot("out"),
 			jen.Return(
-				jen.Nil(),
-				jen.False(),
+				jen.Id("out"),
+				jen.Id("ok"),
+			),
+		},
+
+		// wait method
+		[]jen.Code{
+			jen.Return(
 				jen.Op("<-").Id("c").Dot("err"),
 			),
 		},

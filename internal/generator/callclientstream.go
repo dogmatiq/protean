@@ -21,6 +21,7 @@ func appendClientStreamingRuntimeCallConstructor(code *jen.File, s *scope.Method
 					jen.Id("ctx"),
 					jen.Id("service"),
 					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType)),
+					jen.Nil(), // err
 				),
 			jen.Return(
 				jen.Id("c"),
@@ -44,6 +45,7 @@ func appendClientStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id("service").Id(s.ServiceInterface()),
 			jen.Id("in").Chan().Op("*").Qual(inputPkg, inputType),
+			jen.Id("err").Error(),
 		},
 
 		// send method
@@ -94,7 +96,6 @@ func appendClientStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 				jen.Return(
 					jen.Nil(),
 					jen.False(),
-					jen.Nil(),
 				),
 			),
 			jen.Line(),
@@ -104,13 +105,27 @@ func appendClientStreamingRuntimeCallImpl(code *jen.File, s *scope.Method) {
 					jen.Id("c").Dot("ctx"),
 					jen.Id("c").Dot("in"),
 				),
+			jen.Line(),
 			jen.Id("c").Dot("service").Op("=").Nil(),
+			jen.Id("c").Dot("err").Op("=").Id("err"),
 			jen.Line(),
 			jen.Return(
 				jen.Id("out"),
 				jen.Id("err").Op("==").Nil(),
-				jen.Id("err"),
 			),
+		},
+
+		// wait method
+		[]jen.Code{
+			jen.If(
+				jen.Id("c").Dot("service").Op("==").Nil(),
+			).Block(
+				jen.Return(
+					jen.Id("c").Dot("err"),
+				),
+			),
+			jen.Line(),
+			jen.Panic(jen.Lit("Wait() called before Recv() returned false")),
 		},
 
 		// run method

@@ -74,14 +74,17 @@ type Call interface {
 
 	// Recv returns the next output message produced by this call.
 	//
-	// If err is non-nil, the RPC method has returned an error or the call's
-	// context has been canceled.
-	//
 	// If ok is true then out is an RPC output message, and Recv() should be
 	// called again.
+	Recv() (out proto.Message, ok bool)
+
+	// Wait blocks until the RPC method returns.
 	//
-	// If err is nil and ok is false the RPC method has returned cleanly.
-	Recv() (out proto.Message, ok bool, err error)
+	// It must not be called until after Recv() has returned false.
+	//
+	// If err is non-nil, the RPC method has returned an error or the call's
+	// context has been canceled.
+	Wait() error
 }
 
 // Unmarshaler is a function that unmarshals a protocol buffers message into m.
