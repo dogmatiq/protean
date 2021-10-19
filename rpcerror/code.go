@@ -21,6 +21,10 @@ var (
 	// successfully.
 	DeadlineExceeded = Code{-1}
 
+	// Canceled is an error code that indicates execution of an RPC method was
+	// forcibly terminated.
+	Canceled = Code{-2}
+
 	// InvalidInput is an error code that indicates that the input message to
 	// the RPC method is invalid according to some application-defined rules.
 	//
@@ -28,31 +32,31 @@ var (
 	//
 	// FailedPrecondition is the appropriate code to use if the input is only
 	// invalid due to the current state of the application.
-	InvalidInput = Code{-2}
+	InvalidInput = Code{-3}
 
 	// Unauthenticated is an error code that indicates that the client has
 	// attempted to perform some action that requires authentication, but valid
 	// authentication credentials have not been provided.
-	Unauthenticated = Code{-3}
+	Unauthenticated = Code{-4}
 
 	// PermissionDenied is an error code that indicates that the caller does not
 	// have permission to perform some action.
 	//
 	// It differs from Unauthenticated, which indicates that valid credentials
 	// have not been supplied at all.
-	PermissionDenied = Code{-4}
+	PermissionDenied = Code{-5}
 
 	// NotFound is an error code that indicates that the client has requested
 	// some entity that was not found.
-	NotFound = Code{-5}
+	NotFound = Code{-6}
 
 	// AlreadyExists is an error code that indicates that client has attempted
 	// to create some entity that already exists.
-	AlreadyExists = Code{-6}
+	AlreadyExists = Code{-7}
 
 	// ResourceExhausted is an error code that indicates that some resource has
 	// been exhausted, such as a rate limit.
-	ResourceExhausted = Code{-7}
+	ResourceExhausted = Code{-8}
 
 	// FailedPrecondition is an error code that indicates the application is not
 	// in the required state to perform some action.
@@ -63,25 +67,25 @@ var (
 	// Use Unavailable if the client can safely re-send the failed RPC request,
 	// or Aborted if the client should retry at a higher level, such as by
 	// beginning some business process again.
-	FailedPrecondition = Code{-8}
+	FailedPrecondition = Code{-9}
 
 	// Aborted is an error code that indicates some action was aborted.
 	//
 	// The client may retry the operation by restarting whatever higher level
 	// process it belongs to, but should not simply re-send the same RPC
 	// request.
-	Aborted = Code{-9}
+	Aborted = Code{-10}
 
 	// Unavailable is an error code that indicates that the server is
 	// temporarily unable to fulfill a request.
 	//
 	// The client may safely retry the RPC call by re-sending the request,
 	// typically after some delay.
-	Unavailable = Code{-10}
+	Unavailable = Code{-11}
 
 	// NotImplemented is an error code that indicates an RPC method is not
 	// implemented or otherwise unsupported by the server.
-	NotImplemented = Code{-11}
+	NotImplemented = Code{-12}
 )
 
 // NewCode returns a new application-defined error code.
@@ -118,6 +122,8 @@ func (c Code) String() string {
 		return "unknown"
 	case DeadlineExceeded:
 		return "deadline exceeded"
+	case Canceled:
+		return "canceled"
 	case InvalidInput:
 		return "invalid input"
 	case Unauthenticated:

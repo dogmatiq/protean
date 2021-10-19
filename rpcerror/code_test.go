@@ -30,6 +30,7 @@ var _ = Describe("type Code", func() {
 			},
 			Entry("Unknown", Unknown, "unknown"),
 			Entry("DeadlineExceeded", DeadlineExceeded, "deadline exceeded"),
+			Entry("Canceled", Canceled, "canceled"),
 			Entry("InvalidInput", InvalidInput, "invalid input"),
 			Entry("Unauthenticated", Unauthenticated, "unauthenticated"),
 			Entry("PermissionDenied", PermissionDenied, "permission denied"),
