@@ -112,7 +112,12 @@ func (h *handler) servePOST(
 		return
 	}
 
-	call := method.NewCall(r.Context(), h.interceptor)
+	call := method.NewCall(
+		r.Context(),
+		runtime.CallOptions{
+			Interceptor: h.interceptor,
+		},
+	)
 	defer call.Done()
 
 	// Send never blocks on unary RPC methods.

@@ -20,9 +20,18 @@ func appendBidirectionalStreamingRuntimeCallConstructor(code *jen.File, s *scope
 				Values(
 					jen.Id("ctx"),
 					jen.Id("service"),
-					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType)),
-					jen.Make(jen.Chan().Op("*").Qual(outputPkg, outputType)),
-					jen.Make(jen.Chan().Error(), jen.Lit(1)),
+					jen.Make(
+						jen.Chan().Op("*").Qual(inputPkg, inputType),
+						jen.Id("options").Dot("InputChannelCapacity"),
+					),
+					jen.Make(
+						jen.Chan().Op("*").Qual(outputPkg, outputType),
+						jen.Id("options").Dot("OutputChannelCapacity"),
+					),
+					jen.Make(
+						jen.Chan().Error(),
+						jen.Lit(1),
+					),
 				),
 			jen.Go().Id("c").Dot("run").Call(),
 			jen.Return(

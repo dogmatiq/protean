@@ -24,7 +24,7 @@ func appendRuntimeCallConstructor(
 		Params(
 			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id("service").Id(s.ServiceInterface()),
-			jen.Id("interceptor").Qual(middlewarePackage, "ServerInterceptor"),
+			jen.Id("options").Qual(runtimePackage, "CallOptions"),
 		).
 		Params(
 			jen.Qual(runtimePackage, "Call"),

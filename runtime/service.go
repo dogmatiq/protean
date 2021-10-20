@@ -56,7 +56,22 @@ type Method interface {
 	//
 	// ctx is the context for the lifetime of the call, including any time taken
 	// to stream input and output messages.
-	NewCall(ctx context.Context, i middleware.ServerInterceptor) Call
+	NewCall(ctx context.Context, options CallOptions) Call
+}
+
+// CallOptions encapsulates the options used when making a new call.
+type CallOptions struct {
+	// Interceptor is a hook that intercepts calls to RPC methods and
+	// input/output values.
+	Interceptor middleware.ServerInterceptor
+
+	// InputChannelCapacity is the capacity of the "inputs" channel for RPC
+	// methods that use client-streaming.
+	InputChannelCapacity int
+
+	// OutputChannelCapcity is the capacity of the "outputs" channel for RPC
+	// methods that use server-streaming.
+	OutputChannelCapacity int
 }
 
 // Call represents a single invocation of an RPC method.

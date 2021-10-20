@@ -18,8 +18,11 @@ func appendUnaryRuntimeCallConstructor(code *jen.File, s *scope.Method) {
 				jen.Op("&").Id(s.RuntimeCallImpl()).Values(
 					jen.Id("ctx"),
 					jen.Id("service"),
-					jen.Id("interceptor"),
-					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType), jen.Lit(1)),
+					jen.Id("options").Dot("Interceptor"),
+					jen.Make(
+						jen.Chan().Op("*").Qual(inputPkg, inputType),
+						jen.Lit(1),
+					),
 					jen.Nil(), // err
 				),
 			),

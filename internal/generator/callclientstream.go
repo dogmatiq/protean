@@ -9,22 +9,22 @@ import (
 // constructs a runtime.Call implementation for a client streaming RPC method.
 func appendClientStreamingRuntimeCallConstructor(code *jen.File, s *scope.Method) {
 	inputPkg, inputType, _ := s.GoInputType()
-	// outputPkg, outputType, _ := s.GoOutputType()
 
 	appendRuntimeCallConstructor(
 		code,
 		s,
 		[]jen.Code{
-			jen.Id("c").Op(":=").
-				Op("&").Id(s.RuntimeCallImpl()).
-				Values(
-					jen.Id("ctx"),
-					jen.Id("service"),
-					jen.Make(jen.Chan().Op("*").Qual(inputPkg, inputType)),
-					jen.Nil(), // err
-				),
 			jen.Return(
-				jen.Id("c"),
+				jen.Op("&").Id(s.RuntimeCallImpl()).
+					Values(
+						jen.Id("ctx"),
+						jen.Id("service"),
+						jen.Make(
+							jen.Chan().Op("*").Qual(inputPkg, inputType),
+							jen.Id("options").Dot("InputChannelCapacity"),
+						),
+						jen.Nil(), // err
+					),
 			),
 		},
 	)
