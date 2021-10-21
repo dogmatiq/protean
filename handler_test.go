@@ -723,7 +723,7 @@ var _ = Describe("type Handler", func() {
 
 				expectError(
 					response,
-					http.StatusNotImplemented,
+					http.StatusMethodNotAllowed,
 					"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 					rpcerror.New(
 						rpcerror.NotImplemented,

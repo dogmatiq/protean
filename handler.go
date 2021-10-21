@@ -105,7 +105,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		httpError(
 			w,
-			http.StatusNotImplemented,
+			http.StatusMethodNotAllowed,
 			protomime.TextMediaTypes[0],
 			protomime.TextMarshaler,
 			rpcerror.New(
