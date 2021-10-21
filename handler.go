@@ -104,7 +104,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/" {
 		if websocket.IsWebSocketUpgrade(r) {
 			h.serveWebSocket(w, r)
-		} else if r.Method == http.MethodGet {
+			return
+		}
+
+		if r.Method == http.MethodGet {
 			httpError(
 				w,
 				http.StatusUpgradeRequired,
@@ -115,20 +118,20 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					"the HTTP GET method is only supported for websocket connections, establish a websocket connection or POST to /<package>/<service>/<method>",
 				),
 			)
-		} else {
-			httpError(
-				w,
-				http.StatusMethodNotAllowed,
-				protomime.TextMediaTypes[0],
-				protomime.TextMarshaler,
-				rpcerror.New(
-					rpcerror.NotImplemented,
-					"the HTTP %s method is not supported at this path, establish a websocket connection or POST to /<package>/<service>/<method>",
-					r.Method,
-				),
-			)
+			return
 		}
 
+		httpError(
+			w,
+			http.StatusMethodNotAllowed,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotImplemented,
+				"the HTTP %s method is not supported at this path, establish a websocket connection or POST to /<package>/<service>/<method>",
+				r.Method,
+			),
+		)
 		return
 	}
 
@@ -137,13 +140,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasStreaming := method.InputIsStream() || method.OutputIsStream()
-
-	if !hasStreaming {
-		w.Header().Set("Accept-Post", acceptPostHeader)
-	}
-
-	if hasStreaming {
+	if method.InputIsStream() || method.OutputIsStream() {
 		httpError(
 			w,
 			http.StatusNotImplemented,
@@ -157,7 +154,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				method.Name(),
 			),
 		)
-	} else if r.Method != http.MethodPost {
+		return
+	}
+
+	// Set the Accept-Post header only once we've verified that the requested
+	// method exists and supports calling via POST.
+	w.Header().Set("Accept-Post", acceptPostHeader)
+
+	if r.Method != http.MethodPost {
 		httpError(
 			w,
 			http.StatusMethodNotAllowed,
@@ -169,9 +173,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				r.Method,
 			),
 		)
-	} else {
-		h.servePOST(w, r, method)
+		return
 	}
+
+	h.servePOST(w, r, method)
 }
 
 // resolveMethod looks up the RPC method based on the request URL.
