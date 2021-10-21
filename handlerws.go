@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dogmatiq/protean/internal/protomime"
+	"github.com/gorilla/websocket"
 )
 
 // defaultWebSocketProtocol is the websocket sub-protocol to use when the client
@@ -69,4 +70,62 @@ func (h *handler) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 	)
 
 	conn.SetReadLimit(int64(h.maxInputSize))
+
+	m, u := resolveWebSocketProtocol(conn)
+
+	ws := &webSocket{
+		services:    h.services,
+		conn:        conn,
+		marshaler:   m,
+		unmarshaler: u,
+		interceptor: h.interceptor,
+		inputCap:    10, // TODO: make this configurable
+		outputCap:   10, // TODO: make this configurable
+	}
+
+	if err := ws.Serve(ctx); err != nil {
+		_ = conn.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(
+				websocket.CloseProtocolError,
+				err.Error(),
+			),
+			time.Now().Add(1*time.Second),
+		)
+	}
+}
+
+// resolveWebSocketProtocol resolves a websocket sub-protocol to the MIME
+// media-type it implies, and returns the marshaler/unmarshaler to use for that
+// media type.
+//
+// It panics if the sub-protocol is not supported, as it should have already
+// been negotiated as part of the websocket upgrade process.
+func resolveWebSocketProtocol(conn *websocket.Conn) (protomime.Marshaler, protomime.Unmarshaler) {
+	p := conn.Subprotocol()
+	if p == "" {
+		// Fall back to the default.
+		//
+		// An empty string means negotation failed, but gorilla/websocket will
+		// have sent the default Sec-WebSocket-Protocol we configured above
+		// (when upgrading to a websocket).
+		p = defaultWebSocketProtocol
+	}
+
+	mediaType, ok := protomime.MediaTypeFromWebSocketProtocol(p)
+	if !ok {
+		panic("unsupported websocket sub-protocol")
+	}
+
+	marshaler, ok := protomime.MarshalerForMediaType(mediaType)
+	if !ok {
+		panic("unsupported websocket sub-protocol")
+	}
+
+	unmarshaler, ok := protomime.UnmarshalerForMediaType(mediaType)
+	if !ok {
+		panic("unsupported websocket sub-protocol")
+	}
+
+	return marshaler, unmarshaler
 }

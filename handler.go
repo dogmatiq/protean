@@ -236,8 +236,8 @@ func (h *handler) resolveMethod(
 	return service, method, true
 }
 
-// parsePath parses the URI path p and returns the names of the service
-// and method that it maps to.
+// parsePath parses a path in the format '/<package>/<service>/<method>' p and
+// returns the names of the service and method that it maps to.
 func parsePath(p string) (service, method string, ok bool) {
 	pkg, p, ok := nextPathSegment(p)
 	if !ok {
