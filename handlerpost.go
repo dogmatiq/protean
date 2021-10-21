@@ -18,20 +18,6 @@ func (h *handler) servePOST(
 	r *http.Request,
 	method runtime.Method,
 ) {
-	if r.Method != http.MethodPost {
-		httpError(
-			w,
-			http.StatusNotImplemented,
-			protomime.TextMediaTypes[0],
-			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotImplemented,
-				"the HTTP method must be POST",
-			),
-		)
-		return
-	}
-
 	unmarshaler, inputMediaType, ok, err := unmarshalerByNegotiation(r)
 	if err != nil {
 		httpError(
