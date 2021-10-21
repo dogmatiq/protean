@@ -22,17 +22,16 @@ type Handler interface {
 // handler is an implementation of Handler that handles RPC method calls made
 // via HTTP POST requests and "method-scoped" websocket connections.
 type handler struct {
-	services    map[string]runtime.Service
-	interceptor middleware.ServerInterceptor
+	services     map[string]runtime.Service
+	interceptor  middleware.ServerInterceptor
+	maxInputSize int
 }
-
-// HandlerOption is an option that changes the behavior of an HTTP handler.
-type HandlerOption func(*handler)
 
 // NewHandler returns a new HTTP handler that maps HTTP requests to RPC calls.
 func NewHandler(options ...HandlerOption) Handler {
 	h := &handler{
-		interceptor: middleware.Validator{},
+		interceptor:  middleware.Validator{},
+		maxInputSize: DefaultMaxRPCInputSize,
 	}
 
 	for _, opt := range options {

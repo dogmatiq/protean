@@ -18,6 +18,11 @@ func (h *handler) servePOST(
 	r *http.Request,
 	method runtime.Method,
 ) {
+	contentLength, ok := h.parseContentLength(w, r)
+	if !ok {
+		return
+	}
+
 	unmarshaler, inputMediaType, ok, err := unmarshalerByNegotiation(r)
 	if err != nil {
 		httpError(
@@ -83,7 +88,22 @@ func (h *handler) servePOST(
 		return
 	}
 
-	data, err := io.ReadAll(r.Body)
+	// Setup a read limit. If we don't know the content-length we allow reading
+	// up to the maximum input size.
+	readLimit := contentLength
+	if readLimit <= 0 {
+		readLimit = h.maxInputSize
+	}
+
+	// Read the request body, up to the limit determined above, plus one byte.
+	// The extra byte lets us detect if the actual content length is longer than
+	// expected, or exceeds the maximum.
+	data, err := io.ReadAll(
+		io.LimitReader(
+			r.Body,
+			int64(readLimit)+1,
+		),
+	)
 	if err != nil {
 		httpError(
 			w,
@@ -93,6 +113,34 @@ func (h *handler) servePOST(
 			rpcerror.New(
 				rpcerror.Unknown,
 				"the request body could not be read",
+			),
+		)
+		return
+	}
+
+	if contentLength != 0 && len(data) != contentLength {
+		httpError(
+			w,
+			http.StatusBadRequest,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.Unknown,
+				"the RPC input message length does not match the length specified by the Content-Length header",
+			),
+		)
+		return
+	}
+
+	if len(data) > h.maxInputSize {
+		httpError(
+			w,
+			http.StatusRequestEntityTooLarge,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.Unknown,
+				"the RPC input message length exceeds the maximum allowable size",
 			),
 		)
 		return
@@ -171,4 +219,51 @@ func (h *handler) servePOST(
 	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
+}
+
+// parseContentLength parses the Content-Length header, if present.
+//
+// It returns false if the Content-Length header is invalid or too large, in
+// which case an error response has already been written to w.
+//
+// If no header is present it returns (0, true).
+func (h *handler) parseContentLength(
+	w http.ResponseWriter,
+	r *http.Request,
+) (int, bool) {
+	header := r.Header.Get("Content-Length")
+	if header == "" {
+		return 0, true
+	}
+
+	contentLength, err := strconv.Atoi(header)
+	if err != nil {
+		httpError(
+			w,
+			http.StatusBadRequest,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.Unknown,
+				"the Content-Length header is invalid",
+			),
+		)
+		return 0, false
+	}
+
+	if contentLength > h.maxInputSize {
+		httpError(
+			w,
+			http.StatusRequestEntityTooLarge,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.Unknown,
+				"the length specified by the Content-Length header exceeds the maximum allowable size",
+			),
+		)
+		return 0, false
+	}
+
+	return contentLength, true
 }
