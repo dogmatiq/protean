@@ -11,6 +11,7 @@ import (
 	"github.com/dogmatiq/protean/middleware"
 	"github.com/dogmatiq/protean/rpcerror"
 	"github.com/dogmatiq/protean/runtime"
+	"github.com/gorilla/websocket"
 )
 
 // Handler is an http.Handler that maps HTTP requests to RPC calls.
@@ -75,6 +76,39 @@ func (h *handler) RegisterService(s runtime.Service) {
 // The RPC output message is written to the response body, encoded as per the
 // request's Accept header, which need not be the same as the input encoding.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		if websocket.IsWebSocketUpgrade(r) {
+			panic("not implemented")
+		}
+
+		if r.Method == http.MethodGet {
+			httpError(
+				w,
+				http.StatusUpgradeRequired,
+				protomime.TextMediaTypes[0],
+				protomime.TextMarshaler,
+				rpcerror.New(
+					rpcerror.NotImplemented,
+					"the HTTP GET method is only supported for websocket connections, establish a websocket connection or POST to /<package>/<service>/<method>",
+				),
+			)
+			return
+		}
+
+		httpError(
+			w,
+			http.StatusMethodNotAllowed,
+			protomime.TextMediaTypes[0],
+			protomime.TextMarshaler,
+			rpcerror.New(
+				rpcerror.NotImplemented,
+				"the HTTP %s method is not supported at this path, establish a websocket connection or POST to /<package>/<service>/<method>",
+				r.Method,
+			),
+		)
+		return
+	}
+
 	service, method, ok := h.resolveMethod(w, r)
 	if !ok {
 		return

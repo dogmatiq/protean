@@ -89,7 +89,58 @@ var _ = Describe("type Handler", func() {
 	})
 
 	Describe("func ServeHTTP()", func() {
-		When("the URI path does not refer to a known RPC method", func() {
+		When("the URI path refers to the root", func() {
+			BeforeEach(func() {
+				request.URL.Path = "/"
+				request.Method = http.MethodGet
+			})
+
+			When("the HTTP method is not GET", func() {
+				BeforeEach(func() {
+					request.Method = http.MethodPost
+				})
+
+				It("responds with an HTTP '405 Method Not Allowed' status", func() {
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						http.StatusMethodNotAllowed,
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
+						rpcerror.New(
+							rpcerror.NotImplemented,
+							"the HTTP POST method is not supported at this path, establish a websocket connection or POST to /<package>/<service>/<method>",
+						),
+					)
+
+					expectStandardHeaders(response, false)
+
+					Expect(invoked).To(BeFalse())
+				})
+			})
+
+			When("the request is not a websocket upgrade", func() {
+				It("responds with an HTTP '426 Upgrade Required' status", func() {
+					handler.ServeHTTP(response, request)
+
+					expectError(
+						response,
+						http.StatusUpgradeRequired,
+						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
+						rpcerror.New(
+							rpcerror.NotImplemented,
+							"the HTTP GET method is only supported for websocket connections, establish a websocket connection or POST to /<package>/<service>/<method>",
+						),
+					)
+
+					expectStandardHeaders(response, false)
+
+					Expect(invoked).To(BeFalse())
+				})
+			})
+		})
+
+		When("the URI path is not the root and does not refer to a known RPC method", func() {
 			DescribeTable(
 				"it responds with an HTTP '404 Not Found' status",
 				func(path, message string) {
