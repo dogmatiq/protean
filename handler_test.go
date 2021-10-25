@@ -117,24 +117,19 @@ var _ = Describe("type Handler", func() {
 					Expect(invoked).To(BeFalse())
 				},
 				Entry(
-					"root",
-					"/",
-					"the request URI must follow the '/<package>/<service>/<method>' pattern",
-				),
-				Entry(
 					"missing service & package",
 					"/package",
-					"the request URI must follow the '/<package>/<service>/<method>' pattern",
+					"POST to /<package>/<service>/<method> or establish a websocket connection",
 				),
 				Entry(
 					"missing method",
 					"/package/Service",
-					"the request URI must follow the '/<package>/<service>/<method>' pattern",
+					"POST to /<package>/<service>/<method> or establish a websocket connection",
 				),
 				Entry(
 					"extra segments",
 					"/package/Service/Method/unknown",
-					"the request URI must follow the '/<package>/<service>/<method>' pattern",
+					"POST to /<package>/<service>/<method> or establish a websocket connection",
 				),
 				Entry(
 					"unknown service",
@@ -164,7 +159,7 @@ var _ = Describe("type Handler", func() {
 						"text/plain; charset=utf-8; x-proto=protean.v1.Error",
 						rpcerror.New(
 							rpcerror.NotImplemented,
-							"the HTTP method must be POST",
+							"the HTTP GET method is not supported at this path, use POST or establish a websocket connection",
 						),
 					)
 

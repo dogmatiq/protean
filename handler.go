@@ -88,7 +88,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"the '%s.%s' service does contain an RPC method named '%s', but is not supported by this server because it uses streaming inputs or outputs",
+				"the '%s.%s' service contains an RPC method named '%s', but it requires streaming and therefore must be called via a websocket connection",
 				service.Package(),
 				service.Name(),
 				method.Name(),
@@ -109,7 +109,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"the HTTP method must be POST",
+				"the HTTP %s method is not supported at this path, use POST or establish a websocket connection",
+				r.Method,
 			),
 		)
 		return
@@ -135,7 +136,7 @@ func (h *handler) resolveMethod(
 			protomime.TextMarshaler,
 			rpcerror.New(
 				rpcerror.NotImplemented,
-				"the request URI must follow the '/<package>/<service>/<method>' pattern",
+				"POST to /<package>/<service>/<method> or establish a websocket connection",
 			),
 		)
 
