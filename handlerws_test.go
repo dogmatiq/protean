@@ -52,6 +52,41 @@ var _ = Describe("type Handler (websocket)", func() {
 	})
 
 	Describe("func ServeHTTP()", func() {
+		When("the websocket connection is established successfully", func() {
+			var (
+				conn *websocket.Conn
+			)
+
+			BeforeEach(func() {
+				var err error
+				conn, _, err = websocket.DefaultDialer.DialContext(
+					ctx,
+					webSocketURL,
+					nil,
+				)
+				Expect(err).ShouldNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				if conn != nil {
+					conn.Close()
+				}
+			})
+
+			When("the client sends a frame that can not be unmarshaled", func() {
+				It("closes the connection with a 'invalid frame payload' code", func() {
+					err := conn.WriteMessage(websocket.TextMessage, []byte("}"))
+					Expect(err).ShouldNot(HaveOccurred())
+
+					_, _, err = conn.ReadMessage()
+					Expect(err).To(MatchError(MatchRegexp(
+						`unable to unmarshal frame: proto:.+syntax error \(line 1:1\): unexpected token }`,
+					)))
+					Expect(websocket.IsCloseError(err, websocket.CloseInvalidFramePayloadData)).To(BeTrue())
+				})
+			})
+		})
+
 		Context("sub-protocol negotiation", func() {
 			When("the client does specifies a supported sub-protocol", func() {
 				DescribeTable(

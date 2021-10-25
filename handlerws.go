@@ -2,6 +2,7 @@ package protean
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/dogmatiq/protean/internal/protomime"
 	"github.com/dogmatiq/protean/rpcerror"
@@ -26,6 +27,31 @@ func (h *handler) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
+	m, u := resolveWebSocketProtocol(conn)
+	ws := &webSocket{
+		Conn:        conn,
+		Marshaler:   m,
+		Unmarshaler: u,
+	}
+
+	// TODO: is r.Context() still appropriate now that the connection has been
+	// hijacked?
+	if err := ws.Serve(r.Context()); err != nil {
+		code := websocket.CloseInternalServerErr
+		reason := "internal server error"
+
+		if err, ok := err.(webSocketError); ok {
+			code = err.CloseCode
+			reason = err.Reason
+		}
+
+		_ = conn.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(code, reason),
+			time.Now().Add(1*time.Second),
+		)
+	}
 }
 
 var (
@@ -60,3 +86,38 @@ var (
 		protomime.JSONMediaTypes[0],
 	)
 )
+
+// resolveWebSocketProtocol resolves a websocket sub-protocol to the MIME
+// media-type it implies, and returns the marshaler/unmarshaler to use for that
+// media type.
+//
+// It panics if the sub-protocol is not supported, as it should have already
+// been negotiated as part of the websocket upgrade process.
+func resolveWebSocketProtocol(conn *websocket.Conn) (protomime.Marshaler, protomime.Unmarshaler) {
+	p := conn.Subprotocol()
+	if p == "" {
+		// Fall back to the default.
+		//
+		// An empty string means negotation failed, but gorilla/websocket will
+		// have sent the default Sec-WebSocket-Protocol we configured above
+		// (when upgrading to a websocket).
+		p = defaultWebSocketProtocol
+	}
+
+	mediaType, ok := protomime.MediaTypeFromWebSocketProtocol(p)
+	if !ok {
+		panic("unsupported websocket sub-protocol")
+	}
+
+	marshaler, ok := protomime.MarshalerForMediaType(mediaType)
+	if !ok {
+		panic("unsupported websocket sub-protocol")
+	}
+
+	unmarshaler, ok := protomime.UnmarshalerForMediaType(mediaType)
+	if !ok {
+		panic("unsupported websocket sub-protocol")
+	}
+
+	return marshaler, unmarshaler
+}
