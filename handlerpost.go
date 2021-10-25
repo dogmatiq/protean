@@ -361,3 +361,32 @@ func init() {
 		)
 	}
 }
+
+// httpStatusFromErrorCode returns the default HTTP status to send when an error
+// with the given code occurs.
+func httpStatusFromErrorCode(c rpcerror.Code) int {
+	switch c {
+	case rpcerror.InvalidInput:
+		return http.StatusBadRequest
+	case rpcerror.Unauthenticated:
+		return http.StatusUnauthorized
+	case rpcerror.PermissionDenied:
+		return http.StatusForbidden
+	case rpcerror.NotFound:
+		return http.StatusNotFound
+	case rpcerror.AlreadyExists:
+		return http.StatusConflict
+	case rpcerror.ResourceExhausted:
+		return http.StatusTooManyRequests
+	case rpcerror.FailedPrecondition:
+		return http.StatusBadRequest
+	case rpcerror.Aborted:
+		return http.StatusConflict
+	case rpcerror.Unavailable:
+		return http.StatusServiceUnavailable
+	case rpcerror.NotImplemented:
+		return http.StatusNotImplemented
+	}
+
+	return http.StatusInternalServerError
+}
