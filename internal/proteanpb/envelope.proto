@@ -1,0 +1,101 @@
+syntax = "proto3";
+package protean.v1;
+
+option go_package = "github.com/dogmatiq/protean/internal/proteanpb";
+
+import "google/protobuf/any.proto";
+import "github.com/dogmatiq/protean/internal/proteanpb/error.proto";
+
+// ClientEnvelope is an envelope containing a data frame sent from the client to
+// the server.
+//
+// The envelope & data frame format is intended to allow multiplexing multiple
+// concurrent RPC invocations over a single data stream, such as a websocket
+// connection.
+//
+// Each envelope includes a "call ID" which is used to correlate the data frame
+// with a specific RPC invocation. Call IDs must be unique within a specific
+// data stream (connection), and they must increase monotonically.
+//
+// A new RPC invocation is initiated when the client sends a "call" frame. The
+// client generates a new call ID for each "call" frame. Envelopes from the
+// server include the call ID to allow the frames to be correlated with a
+// specific RPC call.
+//
+// Because Protocol Buffers services allow streaming RPC methods, calls can be
+// long lived and involve multiple input and output messages. The call is
+// completed only when the server sends either a "success" or "error" frame.
+message ClientEnvelope {
+    // CallId identifies the RPC invocation that the frame relates to.
+    uint32 call_id = 1;
+
+    oneof frame {
+        // Call is a frame that starts a new method call.
+        //
+        // Its value is the fully-qualified name of the RPC method to invoke in
+        // the <package>/<service>/<method> format.
+        string call = 2;
+
+        // Send is a frame that sends an input message to the server.
+        //
+        // If the RPC method supports client-streaming the client MAY send any
+        // number of input messages, including zero. Otherwise, it MUST send
+        // exactly one.
+        google.protobuf.Any send = 3;
+
+        // Close is a frame that indicates to the server that no more input
+        // messages will be sent for this call.
+        //
+        // A "close" frame with a value of false is a no-op and MUST be ignored
+        // by the server.
+        bool close = 4;
+
+        // Cancel is a frame that aborts execution of the RPC method.
+        //
+        // A "cancel" frame with a value of false is a no-op and MUST be ignored
+        // by the server.
+        bool cancel = 5;
+    }
+}
+
+// ServerEnvelope is an envelope containing a data frame sent from the server to
+// the client.
+//
+// See the documentation of ClientEnvelope for more information.
+message ServerEnvelope {
+    // CallId identifies the RPC invocation that the frame relates to.
+    uint32 call_id = 1;
+
+    oneof frame {
+        // Send is a frame that sends an RPC output message to the client.
+        //
+        // If the RPC method supports server-streaming the server MAY send any
+        // number of output messages, including zero.
+        //
+        // Otherwise, it MUST send exactly one output message, one "close" frame
+        // and one "success" frame, or in the case of an error, a single "error"
+        // frame.
+        google.protobuf.Any output = 2;
+
+        // Close is a frame that indicates to the client that no more output
+        // messages will be sent for this call.
+        //
+        // This frame ONLY indicates the end of the stream of output frames. It
+        // does NOT mean that the RPC method has finished executing.
+        //
+        // A "close" frame with a value of false is a no-op and MUST be ignored
+        // by the client.
+        bool close = 3;
+
+        // Success is a frame that indicates that the RPC method has returned
+        // successfully (that is, without returning an error).
+        //
+        // A success frame with a value of false is a no-op and MUST be ignored
+        // by the client.
+        bool success = 4;
+
+        // Error is a frame that indicates that the RPC method has returned an
+        // error.
+        Error error = 5;
+    }
+}
