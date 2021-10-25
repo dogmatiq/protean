@@ -78,7 +78,8 @@ func (h *handler) RegisterService(s runtime.Service) {
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/" {
 		if websocket.IsWebSocketUpgrade(r) {
-			panic("not implemented")
+			h.serveWebSocket(w, r)
+			return
 		}
 
 		if r.Method == http.MethodGet {
