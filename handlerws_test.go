@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"time"
 
@@ -80,10 +81,43 @@ var _ = Describe("type Handler (websocket)", func() {
 
 					_, _, err = conn.ReadMessage()
 					Expect(err).To(MatchError(MatchRegexp(
-						`unable to unmarshal frame: proto:.+syntax error \(line 1:1\): unexpected token }`,
+						`websocket: close 1007 \(invalid payload data\): proto:.+syntax error \(line 1:1\): unexpected token }`,
 					)))
-					Expect(websocket.IsCloseError(err, websocket.CloseInvalidFramePayloadData)).To(BeTrue())
 				})
+			})
+
+			When("the client sends a 'call' frame with an unexpected call ID", func() {
+				DescribeTable(
+					"it closes the connection with a 'protocol error' code",
+					func(callID int) {
+						stringCallID := strconv.Itoa(callID)
+
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						err = conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": `+stringCallID+`, "call": "protean.test/TestService/Unary" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						for {
+							_, _, err = conn.ReadMessage()
+
+							// We may receive valid frames from the first call
+							// before the connection is closed as expected.
+							if err != nil {
+								Expect(err).To(MatchError(
+									`websocket: close 1002 (protocol error): out-of-sequence call ID in 'call' frame (` + stringCallID + `), expected >=457`,
+								))
+								break
+							}
+						}
+					},
+					Entry("lower than previous call ID", 123),
+					Entry("same as previous call ID", 456),
+				)
 			})
 		})
 

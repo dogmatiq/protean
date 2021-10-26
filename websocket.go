@@ -17,17 +17,49 @@ type webSocket struct {
 	Conn        *websocket.Conn
 	Marshaler   protomime.Marshaler
 	Unmarshaler protomime.Unmarshaler
+
+	minCallID uint32
 }
 
 // Serve serves RPC requests made via the websocket connection until ctx is
 // canceled or an error occurs.
 func (ws *webSocket) Serve(ctx context.Context) error {
 	for {
-		_, err := ws.read()
+		env, err := ws.read()
 		if err != nil {
 			return err
 		}
+
+		if err := ws.handle(env); err != nil {
+			return err
+		}
 	}
+}
+
+// handle processes a data frame received from the client.
+func (ws *webSocket) handle(env *proteanpb.ClientEnvelope) error {
+	switch fr := env.Frame.(type) {
+	case *proteanpb.ClientEnvelope_Call:
+		return ws.handleCall(env.CallId, fr)
+	}
+
+	return nil
+}
+
+// handleCall handles a "call" frame.
+func (ws *webSocket) handleCall(id uint32, fr *proteanpb.ClientEnvelope_Call) error {
+	if id < ws.minCallID {
+		return newWebSocketError(
+			websocket.CloseProtocolError,
+			"out-of-sequence call ID in 'call' frame (%d), expected >=%d",
+			id,
+			ws.minCallID,
+		)
+	}
+
+	ws.minCallID = id + 1
+
+	return nil
 }
 
 // read reads the next frame from the client.
@@ -41,7 +73,7 @@ func (ws *webSocket) read() (*proteanpb.ClientEnvelope, error) {
 	if err := ws.Unmarshaler.Unmarshal(data, env); err != nil {
 		return nil, newWebSocketError(
 			websocket.CloseInvalidFramePayloadData,
-			"unable to unmarshal frame: %s",
+			"%s",
 			err,
 		)
 	}
