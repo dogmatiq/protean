@@ -41,9 +41,12 @@ func (ws *webSocket) handle(env *proteanpb.ClientEnvelope) error {
 	switch fr := env.Frame.(type) {
 	case *proteanpb.ClientEnvelope_Call:
 		return ws.handleCall(env.CallId, fr)
+	default:
+		return newWebSocketError(
+			websocket.CloseProtocolError,
+			"unrecognized frame type",
+		)
 	}
-
-	return nil
 }
 
 // handleCall handles a "call" frame.

@@ -119,6 +119,20 @@ var _ = Describe("type Handler (websocket)", func() {
 					Entry("same as previous call ID", 456),
 				)
 			})
+
+			When("the client sends an unrecognized frame type", func() {
+				It("closes the connection with a 'protocol error' code", func() {
+					err := conn.WriteMessage(websocket.TextMessage, []byte(
+						`{ "call_id": 456 }`, // The only unrecognized frame type we can produce is the 'nil' frame type
+					))
+					Expect(err).ShouldNot(HaveOccurred())
+
+					_, _, err = conn.ReadMessage()
+					Expect(err).To(MatchError(
+						`websocket: close 1002 (protocol error): unrecognized frame type`,
+					))
+				})
+			})
 		})
 
 		Context("sub-protocol negotiation", func() {
