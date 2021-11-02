@@ -19,6 +19,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
+	"github.com/onsi/gomega/types"
 )
 
 var _ = Describe("type Handler (websocket)", func() {
@@ -66,6 +67,10 @@ var _ = Describe("type Handler (websocket)", func() {
 					nil,
 				)
 				Expect(err).ShouldNot(HaveOccurred())
+
+				conn.SetReadDeadline(
+					time.Now().Add(50 * time.Millisecond),
+				)
 			})
 
 			AfterEach(func() {
@@ -86,42 +91,8 @@ var _ = Describe("type Handler (websocket)", func() {
 				})
 			})
 
-			When("the client sends a 'call' frame with an unexpected call ID", func() {
-				DescribeTable(
-					"it closes the connection with a 'protocol error' code",
-					func(callID int) {
-						stringCallID := strconv.Itoa(callID)
-
-						err := conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
-						))
-						Expect(err).ShouldNot(HaveOccurred())
-
-						err = conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": `+stringCallID+`, "call": "protean.test/TestService/Unary" }`,
-						))
-						Expect(err).ShouldNot(HaveOccurred())
-
-						for {
-							_, _, err = conn.ReadMessage()
-
-							// We may receive valid frames from the first call
-							// before the connection is closed as expected.
-							if err != nil {
-								Expect(err).To(MatchError(
-									`websocket: close 1002 (protocol error): out-of-sequence call ID in 'call' frame (` + stringCallID + `), expected >=457`,
-								))
-								break
-							}
-						}
-					},
-					Entry("lower than previous call ID", 123),
-					Entry("same as previous call ID", 456),
-				)
-			})
-
 			When("the client sends an unrecognized frame type", func() {
-				It("closes the connection with a 'protocol error' code", func() {
+				It("closes the connection", func() {
 					err := conn.WriteMessage(websocket.TextMessage, []byte(
 						`{ "call_id": 456 }`, // The only unrecognized frame type we can produce is the 'nil' frame type
 					))
@@ -131,6 +102,92 @@ var _ = Describe("type Handler (websocket)", func() {
 					Expect(err).To(MatchError(
 						`websocket: close 1002 (protocol error): unrecognized frame type`,
 					))
+				})
+			})
+
+			When("the client sends uses an unexpected call ID", func() {
+				When("the envelope contains a 'call' frame", func() {
+					DescribeTable(
+						"it closes the connection if the call ID is out-of-order",
+						func(callID int) {
+							stringCallID := strconv.Itoa(callID)
+
+							err := conn.WriteMessage(websocket.TextMessage, []byte(
+								`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+							))
+							Expect(err).ShouldNot(HaveOccurred())
+
+							err = conn.WriteMessage(websocket.TextMessage, []byte(
+								`{ "call_id": `+stringCallID+`, "call": "protean.test/TestService/Unary" }`,
+							))
+							Expect(err).ShouldNot(HaveOccurred())
+
+							expectWebSocketReadError(
+								conn,
+								MatchError(
+									`websocket: close 1002 (protocol error): out-of-sequence call ID in 'call' frame (`+stringCallID+`), expected >=457`,
+								),
+							)
+						},
+						Entry("lower than previous call ID", 123),
+						Entry("same as previous call ID", 456),
+					)
+				})
+
+				When("the envelope contains an 'send' frame", func() {
+					It("ignores frames with a call ID that is too low", func() {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						err = conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 123, "send": {} }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						expectWebSocketReadError(conn, MatchError(
+							MatchRegexp(`read tcp .+ i/o timeout`),
+						))
+					})
+
+					It("closes the connection if the call ID is too high", func() {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						err = conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 457, "send": {} }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						expectWebSocketReadError(conn, MatchError(
+							`websocket: close 1002 (protocol error): out-of-sequence call ID in 'send' frame (457), expected <=456`,
+						))
+					})
+				})
+
+				When("the envelope contains an 'done' frame", func() {
+					XIt("ignores frames with a value of false", func() {
+					})
+
+					XIt("ignores frames with a call ID in the past", func() {
+					})
+
+					XIt("closes the connection if the call ID is in the future", func() {
+					})
+				})
+
+				When("the envelope contains an 'cancel' frame", func() {
+					XIt("ignores frames with a value of false", func() {
+					})
+
+					XIt("ignores frames with a call ID in the past", func() {
+					})
+
+					XIt("closes the connection if the call ID is in the future", func() {
+					})
 				})
 			})
 		})
@@ -234,4 +291,19 @@ func expectWebSocketError(
 
 	Expect(actual.Code()).To(Equal(rpcerror.Unknown))
 	Expect(actual.Message()).To(Equal(message))
+}
+
+// expectWebSocketReadError calls conn.ReadMessage() until it returns an error,
+// then verifies that the error matches the given matcher.
+func expectWebSocketReadError(
+	conn *websocket.Conn,
+	matcher types.GomegaMatcher,
+) {
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			Expect(err).To(matcher)
+			break
+		}
+	}
 }
