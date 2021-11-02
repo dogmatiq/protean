@@ -43,6 +43,8 @@ func (ws *webSocket) handle(env *proteanpb.ClientEnvelope) error {
 		return ws.handleCall(env.CallId, fr)
 	case *proteanpb.ClientEnvelope_Send:
 		return ws.handleSend(env.CallId, fr)
+	case *proteanpb.ClientEnvelope_Close:
+		return ws.handleClose(env.CallId, fr)
 	default:
 		return newWebSocketError(
 			websocket.CloseProtocolError,
@@ -72,9 +74,27 @@ func (ws *webSocket) handleSend(id uint32, fr *proteanpb.ClientEnvelope_Send) er
 	if id >= ws.minCallID {
 		return newWebSocketError(
 			websocket.CloseProtocolError,
-			"out-of-sequence call ID in 'send' frame (%d), expected <=%d",
+			"out-of-sequence call ID in 'send' frame (%d), expected <%d",
 			id,
-			ws.minCallID-1,
+			ws.minCallID,
+		)
+	}
+
+	return nil
+}
+
+// handleClose handles a "close" frame.
+func (ws *webSocket) handleClose(id uint32, fr *proteanpb.ClientEnvelope_Close) error {
+	if !fr.Close {
+		return nil
+	}
+
+	if id >= ws.minCallID {
+		return newWebSocketError(
+			websocket.CloseProtocolError,
+			"out-of-sequence call ID in 'close' frame (%d), expected <%d",
+			id,
+			ws.minCallID,
 		)
 	}
 

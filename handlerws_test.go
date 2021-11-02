@@ -163,19 +163,53 @@ var _ = Describe("type Handler (websocket)", func() {
 						Expect(err).ShouldNot(HaveOccurred())
 
 						expectWebSocketReadError(conn, MatchError(
-							`websocket: close 1002 (protocol error): out-of-sequence call ID in 'send' frame (457), expected <=456`,
+							`websocket: close 1002 (protocol error): out-of-sequence call ID in 'send' frame (457), expected <457`,
 						))
 					})
 				})
 
-				When("the envelope contains an 'done' frame", func() {
-					XIt("ignores frames with a value of false", func() {
+				When("the envelope contains an 'close' frame", func() {
+					It("ignores frames with a value of false", func() {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 123, "close": false }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						expectWebSocketReadError(conn, MatchError(
+							MatchRegexp(`read tcp .+ i/o timeout`),
+						))
 					})
 
-					XIt("ignores frames with a call ID in the past", func() {
+					It("ignores frames with a call ID in the past", func() {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						err = conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 123, "close": true }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						expectWebSocketReadError(conn, MatchError(
+							MatchRegexp(`read tcp .+ i/o timeout`),
+						))
 					})
 
-					XIt("closes the connection if the call ID is in the future", func() {
+					It("closes the connection if the call ID is in the future", func() {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						err = conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 457, "close": true }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						expectWebSocketReadError(conn, MatchError(
+							`websocket: close 1002 (protocol error): out-of-sequence call ID in 'close' frame (457), expected <457`,
+						))
 					})
 				})
 
