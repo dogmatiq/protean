@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/dave/jennifer v1.5.0
 	github.com/dogmatiq/iago v0.4.0
-	github.com/elnormous/contenttype v1.0.1
+	github.com/elnormous/contenttype v1.0.2
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
 	google.golang.org/protobuf v1.27.1
