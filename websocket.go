@@ -45,6 +45,8 @@ func (ws *webSocket) handle(env *proteanpb.ClientEnvelope) error {
 		return ws.handleSend(env.CallId, fr)
 	case *proteanpb.ClientEnvelope_Close:
 		return ws.handleClose(env.CallId, fr)
+	case *proteanpb.ClientEnvelope_Cancel:
+		return ws.handleCancel(env.CallId, fr)
 	default:
 		return newWebSocketError(
 			websocket.CloseProtocolError,
@@ -93,6 +95,24 @@ func (ws *webSocket) handleClose(id uint32, fr *proteanpb.ClientEnvelope_Close) 
 		return newWebSocketError(
 			websocket.CloseProtocolError,
 			"out-of-sequence call ID in 'close' frame (%d), expected <%d",
+			id,
+			ws.minCallID,
+		)
+	}
+
+	return nil
+}
+
+// handleCancel handles a "cancel" frame.
+func (ws *webSocket) handleCancel(id uint32, fr *proteanpb.ClientEnvelope_Cancel) error {
+	if !fr.Cancel {
+		return nil
+	}
+
+	if id >= ws.minCallID {
+		return newWebSocketError(
+			websocket.CloseProtocolError,
+			"out-of-sequence call ID in 'cancel' frame (%d), expected <%d",
 			id,
 			ws.minCallID,
 		)
