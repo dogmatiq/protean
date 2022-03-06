@@ -195,8 +195,7 @@ func (ws *webSocket) readNext() (*proteanpb.ClientEnvelope, error) {
 	if err := ws.Unmarshaler.Unmarshal(data, env); err != nil {
 		return nil, newWebSocketError(
 			websocket.CloseInvalidFramePayloadData,
-			"%s",
-			err,
+			"could not unmarshal envelope",
 		)
 	}
 
@@ -215,10 +214,18 @@ type webSocketError struct {
 
 // newWebSocketError returns a new webSocketError with the given code and
 // message.
+//
+// The message is packed into a websocket control frame, and as such has a
+// length limit of 120 bytes.
 func newWebSocketError(code int, format string, args ...interface{}) webSocketError {
+	reason := fmt.Sprintf(format, args...)
+	if len(reason) > 120 {
+		panic("websocket error message is too long")
+	}
+
 	return webSocketError{
 		code,
-		fmt.Sprintf(format, args...),
+		reason,
 	}
 }
 

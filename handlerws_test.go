@@ -86,7 +86,7 @@ var _ = Describe("type Handler (websocket)", func() {
 
 					_, _, err = conn.ReadMessage()
 					Expect(err).To(MatchError(MatchRegexp(
-						`websocket: close 1007 \(invalid payload data\): proto:.+syntax error \(line 1:1\): unexpected token }`,
+						`websocket: close 1007 \(invalid payload data\): could not unmarshal envelope`,
 					)))
 				})
 			})
