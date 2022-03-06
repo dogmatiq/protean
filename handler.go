@@ -243,6 +243,10 @@ func nextPathSegment(p string) (seg, rest string, ok bool) {
 		return "", "", false
 	}
 
+	if p[0] != '/' {
+		return "", "", false
+	}
+
 	p = p[1:] // trim leading slash
 	if p == "" {
 		return "", "", false

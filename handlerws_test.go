@@ -105,6 +105,48 @@ var _ = Describe("type Handler (websocket)", func() {
 				})
 			})
 
+			When("the client calls an invalid or unknown method", func() {
+				DescribeTable(
+					"it closes the connection",
+					func(method, message string) {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 456, "call": "`+method+`" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						_, _, err = conn.ReadMessage()
+						Expect(err).To(MatchError(
+							`websocket: close 1002 (protocol error): invalid method in 'call' frame (456), ` + message,
+						))
+					},
+					Entry(
+						"missing service & package",
+						"package",
+						"does not match '<package>/<service>/<method>' format",
+					),
+					Entry(
+						"missing method",
+						"package/Service",
+						"does not match '<package>/<service>/<method>' format",
+					),
+					Entry(
+						"extra segments",
+						"package/Service/Method/unknown",
+						"does not match '<package>/<service>/<method>' format",
+					),
+					Entry(
+						"unknown service",
+						"package/Service/Method",
+						"no such service",
+					),
+					Entry(
+						"unknown method",
+						"protean.test/TestService/Method",
+						"service has no such method",
+					),
+				)
+			})
+
 			When("the client sends an unexpected call ID", func() {
 				When("the envelope contains a 'call' frame", func() {
 					DescribeTable(

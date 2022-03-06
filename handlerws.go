@@ -30,6 +30,7 @@ func (h *handler) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	m, u := resolveWebSocketProtocol(conn)
 	ws := &webSocket{
+		Services:        h.services,
 		Conn:            conn,
 		Marshaler:       m,
 		Unmarshaler:     u,

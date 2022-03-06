@@ -7,6 +7,7 @@ import (
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
+	"github.com/dogmatiq/protean/runtime"
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
@@ -16,6 +17,7 @@ import (
 // It handles the marshaling and unmarshaling of websocket envelopes and manages
 // the RPC calls made by the client.
 type webSocket struct {
+	Services        map[string]runtime.Service
 	Conn            *websocket.Conn
 	Marshaler       protomime.Marshaler
 	Unmarshaler     protomime.Unmarshaler
@@ -94,6 +96,35 @@ func (ws *webSocket) handleCall(
 			"out-of-sequence call ID in 'call' frame (%d), expected >=%d",
 			id,
 			ws.minCallID,
+		)
+	}
+
+	// Using parsePath() guarantees that the method name parsing behaves
+	// identically to the HTTP-request-based transports.
+	serviceName, methodName, ok := parsePath("/" + fr.Call)
+	if !ok {
+		return newWebSocketError(
+			websocket.CloseProtocolError,
+			"invalid method in 'call' frame (%d), does not match '<package>/<service>/<method>' format",
+			id,
+		)
+	}
+
+	service, ok := ws.Services[serviceName]
+	if !ok {
+		return newWebSocketError(
+			websocket.CloseProtocolError,
+			"invalid method in 'call' frame (%d), no such service",
+			id,
+		)
+	}
+
+	_, ok = service.MethodByName(methodName)
+	if !ok {
+		return newWebSocketError(
+			websocket.CloseProtocolError,
+			"invalid method in 'call' frame (%d), service has no such method",
+			id,
 		)
 	}
 
