@@ -6,53 +6,84 @@
 [![Documentation](https://img.shields.io/badge/go.dev-reference-007d9c)](https://pkg.go.dev/github.com/dogmatiq/protean)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dogmatiq/protean)](https://goreportcard.com/report/github.com/dogmatiq/protean)
 
-Protean is a framework for building RPC web services based on [Protocol Buffers
-service definitions](https://developers.google.com/protocol-buffers/docs/proto3#services).
+Protean is a framework for building browser-facing RPC services based on
+[Protocol Buffers service definitions], with full streaming support.
 
 Protean is inspired by [Twirp](https://github.com/twitchtv/twirp) but has
 different goals. Specifically, Protean is intended to produce RPC services that
-can be used not only for server-to-server communication, but also by browsers
-using only standard browser APIs.
+are easy to use directly in the browser with standard browser APIs. It can also
+be used for server-to-server communication.
 
-Both Protean and Twirp are alternatives to [gRPC](https://grpc.io/).
+Both Protean and Twirp are alternatives to [gRPC].
 
 ## Getting Started
 
-To use Protean, you will need a working knowledge of [Protocol
-Buffers](https://grpc.io/docs/protoc-installation/), and [generating Go code from .proto files](https://developers.google.com/protocol-buffers/docs/reference/go-generated).
+To use Protean, you will need a working knowledge of [Protocol Buffers],
+[Protocol Buffers service definitions] and [generating Go code from .proto
+files][protocol buffers go]. An understanding of [gRPC] is an advantage.
 
-Protean includes a `protoc` plugin called `protoc-gen-go-protean`. The latest
-version can be installed by running:
+Protean provides a `protoc` plugin called `protoc-gen-go-protean`, which is used
+in addition to the standard `protoc-gen-go` plugin. The latest version can be
+installed by running:
 
 ```
 go install github.com/dogmatiq/protean/cmd/protoc-gen-go-protean@latest
 ```
 
-Add the `--go-protean_out` to `protoc` to generate Protean server interfaces and
-RPC clients. An example demonstrating how to implement a server and use an RPC
-client [example_test.go](example_test.go).
+To generate Protean server and client code, pass the `--go-protean_out` flag to
+`protoc`. An example demonstrating how to implement a server and use an RPC
+client is available in [example_test.go](example_test.go).
 
-## Project Goals
+## Transports
 
-### Goals
+Protean exposes APIs via HTTP/1.1 and HTTP/2 using Go's standard HTTP server.
 
-- Services to be consumable by web browsers using standard browser APIs.
-- Services to be equally easy to consume from other servers in any language.
-- Full support for client, server and bidirectional streaming.
-- Provide an adequate level of cache control for use with service workers.
-- Allow the client to choose the best encoding (protobuf, json or text) on a
-  per-call basis.
-- Allow the client to choose the best transport on a per-call basis. Options
-  to include "conventional" HTTP GET and POST requests, websockets, server-sent
-  events (SSE) and JSON-RPC.
-- Produce [`http.Handler`](https://pkg.go.dev/net/http#Handler) implementations
-  that work with Go's standard web server.
-- Co-exist with gRPC services built from the same Protocol Buffers definitions.
-- HTTP/1.1 and HTTP/2 support.
+It has complete support for all method types that can be defined in a Protocol
+Buffers service:
 
-### Non-goals
+- **unary** methods, which accept a single request from the client and
+  return a single response from the server
+- **client streaming** methods, which accept a stream of requests from the
+  client and return a single response from the server
+- **server streaming** methods, which accept a single request from the client
+  and return a stream of responses from the server
+- **bidirectional streaming** methods, which accept a stream of requests from
+  the client and return a stream of responses from the server
 
-- Hiding the fact that the server is RPC based.
-- Providing RESTful APIs, changing behavior based on HTTP methods.
-- Allowing fine-grained control over HTTP-specific behavior, such as setting headers.
-- Non-HTTP transports.
+Depending on what kind of method is being called and what best suits the
+application, the caller can choose from any of the transports described below on
+a per-call basis.
+
+| Tranport  | Supported Methods | Suitable Browser API | Implementation |
+| --------- | ----------------- | -------------------- | -------------- |
+| HTTP GET  | unary             | [fetch]              | ❌             |
+| HTTP POST | unary             | [fetch]              | ✅             |
+| JSON-RPC  | unary             | [fetch]              | ❌             |
+| SSE       | server streaming  | [server-sent events] | ❌             |
+| WebSocket | all               | [websocket]          | 🚧             |
+
+All of the above transports are made available via the same HTTP handler. The
+client uses content negotiation and other similar mechanisms to choose the
+desired transport.
+
+## Encoding
+
+Protean supports all of the standard Protocol Buffers serialization formats:
+
+- [native binary format][protocol buffers native]
+- [canonical JSON format][protocol buffers json]
+- human-readable text format (undocumented)
+
+As with transports, the encoding is chosen via content negotiation. JSON is the
+default encoding, allowing simpler use from the browser.
+
+[fetch]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+[grpc]: https://grpc.io/
+[protocol buffers go]: https://developers.google.com/protocol-buffers/docs/reference/go-generated
+[protocol buffers json]: https://developers.google.com/protocol-buffers/docs/proto3#json
+[protocol buffers native]: https://developers.google.com/protocol-buffers/docs/encoding
+[protocol buffers service definitions]: https://developers.google.com/protocol-buffers/docs/proto3#services
+[protocol buffers]: https://developers.google.com/protocol-buffers
+[server-sent events]: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
+[twirp]: https://github.com/twitchtv/twirp
+[websocket]: https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
