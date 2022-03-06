@@ -84,10 +84,12 @@ var _ = Describe("type Handler (websocket)", func() {
 					err := conn.WriteMessage(websocket.TextMessage, []byte("}"))
 					Expect(err).ShouldNot(HaveOccurred())
 
-					_, _, err = conn.ReadMessage()
-					Expect(err).To(MatchError(MatchRegexp(
-						`websocket: close 1007 \(invalid payload data\): could not unmarshal envelope`,
-					)))
+					expectWebSocketReadError(
+						conn,
+						MatchError(
+							MatchRegexp(`websocket: close 1007 \(invalid payload data\): could not unmarshal envelope`),
+						),
+					)
 				})
 			})
 
@@ -98,14 +100,17 @@ var _ = Describe("type Handler (websocket)", func() {
 					))
 					Expect(err).ShouldNot(HaveOccurred())
 
-					_, _, err = conn.ReadMessage()
-					Expect(err).To(MatchError(
-						`websocket: close 1002 (protocol error): unrecognized frame type`,
-					))
+					expectWebSocketReadError(
+						conn,
+						MatchError(
+							`websocket: close 1002 (protocol error): unrecognized frame type`,
+						),
+					)
 				})
 			})
 
 			When("the client calls an invalid or unknown method", func() {
+				// TODO: these should be RPC errors, not connection closures.
 				DescribeTable(
 					"it closes the connection",
 					func(method, message string) {
@@ -114,10 +119,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						_, _, err = conn.ReadMessage()
-						Expect(err).To(MatchError(
-							`websocket: close 1002 (protocol error): invalid method in 'call' frame (456), ` + message,
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								`websocket: close 1002 (protocol error): invalid method in 'call' frame (456), `+message,
+							),
+						)
 					},
 					Entry(
 						"missing service & package",
@@ -188,9 +195,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							MatchRegexp(`read tcp .+ i/o timeout`),
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								MatchRegexp(`read tcp .+ i/o timeout`),
+							),
+						)
 					})
 
 					It("closes the connection if the call ID is too high", func() {
@@ -204,9 +214,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							`websocket: close 1002 (protocol error): out-of-sequence call ID in 'send' frame (457), expected <457`,
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								`websocket: close 1002 (protocol error): out-of-sequence call ID in 'send' frame (457), expected <457`,
+							),
+						)
 					})
 				})
 
@@ -217,9 +230,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							MatchRegexp(`read tcp .+ i/o timeout`),
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								MatchRegexp(`read tcp .+ i/o timeout`),
+							),
+						)
 					})
 
 					It("ignores frames with a call ID in the past", func() {
@@ -233,9 +249,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							MatchRegexp(`read tcp .+ i/o timeout`),
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								MatchRegexp(`read tcp .+ i/o timeout`),
+							),
+						)
 					})
 
 					It("closes the connection if the call ID is in the future", func() {
@@ -249,9 +268,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							`websocket: close 1002 (protocol error): out-of-sequence call ID in 'close' frame (457), expected <457`,
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								`websocket: close 1002 (protocol error): out-of-sequence call ID in 'close' frame (457), expected <457`,
+							),
+						)
 					})
 				})
 
@@ -262,9 +284,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							MatchRegexp(`read tcp .+ i/o timeout`),
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								MatchRegexp(`read tcp .+ i/o timeout`),
+							),
+						)
 					})
 
 					It("ignores frames with a call ID in the past", func() {
@@ -278,9 +303,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							MatchRegexp(`read tcp .+ i/o timeout`),
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								MatchRegexp(`read tcp .+ i/o timeout`),
+							),
+						)
 					})
 
 					It("closes the connection if the call ID is in the future", func() {
@@ -294,9 +322,12 @@ var _ = Describe("type Handler (websocket)", func() {
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(conn, MatchError(
-							`websocket: close 1002 (protocol error): out-of-sequence call ID in 'cancel' frame (457), expected <457`,
-						))
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								`websocket: close 1002 (protocol error): out-of-sequence call ID in 'cancel' frame (457), expected <457`,
+							),
+						)
 					})
 				})
 			})
@@ -412,7 +443,7 @@ func expectWebSocketReadError(
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
-			Expect(err).To(matcher)
+			Expect(err).To(matcher, err.Error())
 			break
 		}
 	}

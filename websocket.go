@@ -101,6 +101,9 @@ func (ws *webSocket) handleCall(
 
 	// Using parsePath() guarantees that the method name parsing behaves
 	// identically to the HTTP-request-based transports.
+	//
+	// TODO: these should be regular RPC errors, not protocol errors (connection
+	// should not be closed).
 	serviceName, methodName, ok := parsePath("/" + fr.Call)
 	if !ok {
 		return newWebSocketError(
