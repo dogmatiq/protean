@@ -38,7 +38,7 @@ message ClientEnvelope {
 
         // Send is a frame that sends an input message to the server.
         //
-        // If the RPC method supports client-streaming the client MAY send any
+        // If the RPC method supports client streaming the client MAY send any
         // number of input messages, including zero. Otherwise, it MUST send
         // exactly one.
         google.protobuf.Any send = 3;
@@ -69,7 +69,7 @@ message ServerEnvelope {
     oneof frame {
         // Send is a frame that sends an RPC output message to the client.
         //
-        // If the RPC method supports server-streaming the server MAY send any
+        // If the RPC method supports server streaming the server MAY send any
         // number of output messages, including zero.
         //
         // Otherwise, it MUST send exactly one output message, one "close" frame

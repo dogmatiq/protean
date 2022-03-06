@@ -144,7 +144,7 @@ type ClientEnvelope_Call struct {
 type ClientEnvelope_Send struct {
 	// Send is a frame that sends an input message to the server.
 	//
-	// If the RPC method supports client-streaming the client MAY send any
+	// If the RPC method supports client streaming the client MAY send any
 	// number of input messages, including zero. Otherwise, it MUST send
 	// exactly one.
 	Send *anypb.Any `protobuf:"bytes,3,opt,name=send,proto3,oneof"`
@@ -275,7 +275,7 @@ type isServerEnvelope_Frame interface {
 type ServerEnvelope_Output struct {
 	// Send is a frame that sends an RPC output message to the client.
 	//
-	// If the RPC method supports server-streaming the server MAY send any
+	// If the RPC method supports server streaming the server MAY send any
 	// number of output messages, including zero.
 	//
 	// Otherwise, it MUST send exactly one output message, one "close" frame

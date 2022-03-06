@@ -57,11 +57,11 @@ type CallOptions struct {
 	Interceptor middleware.ServerInterceptor
 
 	// InputChannelCapacity is the capacity of the "inputs" channel for RPC
-	// methods that use client-streaming.
+	// methods that use client streaming.
 	InputChannelCapacity int
 
 	// OutputChannelCapcity is the capacity of the "outputs" channel for RPC
-	// methods that use server-streaming.
+	// methods that use server streaming.
 	OutputChannelCapacity int
 }
 
