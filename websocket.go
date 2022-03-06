@@ -3,6 +3,7 @@ package protean
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
@@ -15,9 +16,10 @@ import (
 // It handles the marshaling and unmarshaling of websocket envelopes and manages
 // the RPC calls made by the client.
 type webSocket struct {
-	Conn        *websocket.Conn
-	Marshaler   protomime.Marshaler
-	Unmarshaler protomime.Unmarshaler
+	Conn            *websocket.Conn
+	Marshaler       protomime.Marshaler
+	Unmarshaler     protomime.Unmarshaler
+	ProtocolTimeout time.Duration
 
 	minCallID uint32
 	calls     *errgroup.Group

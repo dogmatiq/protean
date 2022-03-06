@@ -30,9 +30,10 @@ func (h *handler) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	m, u := resolveWebSocketProtocol(conn)
 	ws := &webSocket{
-		Conn:        conn,
-		Marshaler:   m,
-		Unmarshaler: u,
+		Conn:            conn,
+		Marshaler:       m,
+		Unmarshaler:     u,
+		ProtocolTimeout: h.webSocketProtocolTimeout,
 	}
 
 	// TODO: is r.Context() still appropriate now that the connection has been
