@@ -61,16 +61,19 @@ func (ws *webSocket) Serve(ctx context.Context) error {
 }
 
 // handle processes a data frame received from the client.
-func (ws *webSocket) handle(env *proteanpb.ClientEnvelope) error {
+func (ws *webSocket) handle(
+	ctx context.Context,
+	env *proteanpb.ClientEnvelope,
+) error {
 	switch fr := env.Frame.(type) {
 	case *proteanpb.ClientEnvelope_Call:
-		return ws.handleCall(env.CallId, fr)
+		return ws.handleCall(ctx, env.CallId, fr)
 	case *proteanpb.ClientEnvelope_Send:
-		return ws.handleSend(env.CallId, fr)
+		return ws.handleSend(ctx, env.CallId, fr)
 	case *proteanpb.ClientEnvelope_Close:
-		return ws.handleClose(env.CallId, fr)
+		return ws.handleClose(ctx, env.CallId, fr)
 	case *proteanpb.ClientEnvelope_Cancel:
-		return ws.handleCancel(env.CallId, fr)
+		return ws.handleCancel(ctx, env.CallId, fr)
 	default:
 		return newWebSocketError(
 			websocket.CloseProtocolError,
@@ -80,7 +83,11 @@ func (ws *webSocket) handle(env *proteanpb.ClientEnvelope) error {
 }
 
 // handleCall handles a "call" frame.
-func (ws *webSocket) handleCall(id uint32, fr *proteanpb.ClientEnvelope_Call) error {
+func (ws *webSocket) handleCall(
+	ctx context.Context,
+	id uint32,
+	fr *proteanpb.ClientEnvelope_Call,
+) error {
 	if id < ws.minCallID {
 		return newWebSocketError(
 			websocket.CloseProtocolError,
@@ -96,7 +103,11 @@ func (ws *webSocket) handleCall(id uint32, fr *proteanpb.ClientEnvelope_Call) er
 }
 
 // handleSend handles a "send" frame.
-func (ws *webSocket) handleSend(id uint32, fr *proteanpb.ClientEnvelope_Send) error {
+func (ws *webSocket) handleSend(
+	ctx context.Context,
+	id uint32,
+	fr *proteanpb.ClientEnvelope_Send,
+) error {
 	if id >= ws.minCallID {
 		return newWebSocketError(
 			websocket.CloseProtocolError,
@@ -110,7 +121,11 @@ func (ws *webSocket) handleSend(id uint32, fr *proteanpb.ClientEnvelope_Send) er
 }
 
 // handleClose handles a "close" frame.
-func (ws *webSocket) handleClose(id uint32, fr *proteanpb.ClientEnvelope_Close) error {
+func (ws *webSocket) handleClose(
+	ctx context.Context,
+	id uint32,
+	fr *proteanpb.ClientEnvelope_Close,
+) error {
 	if !fr.Close {
 		return nil
 	}
@@ -128,7 +143,11 @@ func (ws *webSocket) handleClose(id uint32, fr *proteanpb.ClientEnvelope_Close) 
 }
 
 // handleCancel handles a "cancel" frame.
-func (ws *webSocket) handleCancel(id uint32, fr *proteanpb.ClientEnvelope_Cancel) error {
+func (ws *webSocket) handleCancel(
+	ctx context.Context,
+	id uint32,
+	fr *proteanpb.ClientEnvelope_Cancel,
+) error {
 	if !fr.Cancel {
 		return nil
 	}
