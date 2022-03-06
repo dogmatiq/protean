@@ -7,31 +7,53 @@ import (
 	"github.com/dogmatiq/protean/internal/proteanpb"
 	"github.com/dogmatiq/protean/internal/protomime"
 	"github.com/gorilla/websocket"
+	"golang.org/x/sync/errgroup"
 )
 
 // webSocket manages communication for a single websocket connection.
 //
 // It handles the marshaling and unmarshaling of websocket envelopes and manages
-// the lifetime of virtual channels established by the client.
+// the RPC calls made by the client.
 type webSocket struct {
 	Conn        *websocket.Conn
 	Marshaler   protomime.Marshaler
 	Unmarshaler protomime.Unmarshaler
 
 	minCallID uint32
+	calls     *errgroup.Group
 }
 
 // Serve serves RPC requests made via the websocket connection until ctx is
 // canceled or an error occurs.
 func (ws *webSocket) Serve(ctx context.Context) error {
-	for {
-		env, err := ws.read()
-		if err != nil {
-			return err
-		}
+	// The read-loop is NOT run within the same errgroup as the calls because we
+	// have no way to unblock it without closing the connection.
+	//
+	// Instead we let Serve() return when all the calls are done and let
+	// readLoop() run until the websocket connection is closed. The readErr
+	// channel is used to terminate Serve() if the read-loop itself fails.
+	read := make(chan *proteanpb.ClientEnvelope)
+	readErr := make(chan error, 1)
+	go func() {
+		readErr <- ws.readLoop(ctx, read)
+	}()
 
-		if err := ws.handle(env); err != nil {
-			return err
+	ws.calls, ctx = errgroup.WithContext(ctx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ws.calls.Wait()
+
+		case env := <-read:
+			if err := ws.handle(ctx, env); err != nil {
+				return err
+			}
+
+		case err := <-readErr:
+			if err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -121,8 +143,28 @@ func (ws *webSocket) handleCancel(id uint32, fr *proteanpb.ClientEnvelope_Cancel
 	return nil
 }
 
-// read reads the next frame from the client.
-func (ws *webSocket) read() (*proteanpb.ClientEnvelope, error) {
+// read reads message from the websocket and pipes them to the ws.in channel.
+func (ws *webSocket) readLoop(
+	ctx context.Context,
+	envelopes chan<- *proteanpb.ClientEnvelope,
+) error {
+	for {
+		env, err := ws.readNext()
+		if err != nil {
+			return err
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case envelopes <- env:
+			continue // shows test coverage
+		}
+	}
+}
+
+// readNext reads the next frame from the client.
+func (ws *webSocket) readNext() (*proteanpb.ClientEnvelope, error) {
 	_, data, err := ws.Conn.ReadMessage()
 	if err != nil {
 		return nil, err
