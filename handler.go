@@ -149,11 +149,7 @@ func (h *handler) resolveMethod(
 			http.StatusNotFound,
 			protomime.TextMediaTypes[0],
 			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotImplemented,
-				"the server does not provide the '%s' service",
-				serviceName,
-			),
+			unimplementedServiceError(serviceName),
 		)
 
 		return nil, nil, false
@@ -166,12 +162,7 @@ func (h *handler) resolveMethod(
 			http.StatusNotFound,
 			protomime.TextMediaTypes[0],
 			protomime.TextMarshaler,
-			rpcerror.New(
-				rpcerror.NotImplemented,
-				"the '%s' service does not contain an RPC method named '%s'",
-				serviceName,
-				methodName,
-			),
+			unimplementedMethodError(serviceName, methodName),
 		)
 
 		return nil, nil, false
