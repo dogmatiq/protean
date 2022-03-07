@@ -25,7 +25,9 @@ var (
 
 	// JSONMarshaler is a Marshaler that marshals messages to the JSON Protocol
 	// Buffers encoding.
-	JSONMarshaler Marshaler = protojson.MarshalOptions{}
+	JSONMarshaler Marshaler = protojson.MarshalOptions{
+		UseProtoNames: true,
+	}
 
 	// TextMarshaler is a Marshaler that marshals messages to the text-based
 	// Protocol Buffers encoding.
