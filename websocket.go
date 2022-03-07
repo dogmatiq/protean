@@ -122,7 +122,7 @@ func (ws *webSocket) handleCall(
 		)
 	}
 
-	_, ok = service.MethodByName(methodName)
+	method, ok := service.MethodByName(methodName)
 	if !ok {
 		return newWebSocketError(
 			websocket.CloseProtocolError,
@@ -132,6 +132,16 @@ func (ws *webSocket) handleCall(
 	}
 
 	ws.minCallID = id + 1
+
+	ws.calls.Go(func() error {
+		c := &webSocketCall{
+			ID:              id,
+			Method:          method,
+			ProtocolTimeout: ws.ProtocolTimeout,
+		}
+
+		return c.Serve(ctx)
+	})
 
 	return nil
 }

@@ -37,7 +37,9 @@ var _ = Describe("type Handler (websocket)", func() {
 
 		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 
-		handler = NewHandler()
+		handler = NewHandler(
+			WithWebSocketProtocolTimeout(25 * time.Millisecond),
+		)
 
 		service = &testservice.Stub{}
 		testservice.RegisterProteanTestService(handler, service)
@@ -154,6 +156,48 @@ var _ = Describe("type Handler (websocket)", func() {
 				)
 			})
 
+			When("the client calls a method that does not use client streaming", func() {
+				DescribeTable(
+					"it closes the connection if no 'send' frame is received within the protocol timeout duration",
+					func(method string) {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 123, "call": "`+method+`" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								`websocket: close 1002 (protocol error): expected 'send' frame within 25ms of 'call' frame (123)`,
+							),
+						)
+					},
+					Entry("unary", "protean.test/TestService/Unary"),
+					Entry("server streaming", "protean.test/TestService/ServerStream"),
+				)
+			})
+
+			When("the client calls a method that uses client streaming", func() {
+				DescribeTable(
+					"it does not require a 'send' frame to be sent within the protocol timeout duration",
+					func(method string) {
+						err := conn.WriteMessage(websocket.TextMessage, []byte(
+							`{ "call_id": 123, "call": "`+method+`" }`,
+						))
+						Expect(err).ShouldNot(HaveOccurred())
+
+						expectWebSocketReadError(
+							conn,
+							MatchError(
+								MatchRegexp(`read tcp .+ i/o timeout`),
+							),
+						)
+					},
+					Entry("client streaming", "protean.test/TestService/ClientStream"),
+					Entry("bidirectional streaming", "protean.test/TestService/BidirectionalStream"),
+				)
+			})
+
 			When("the client sends an unexpected call ID", func() {
 				When("the envelope contains a 'call' frame", func() {
 					DescribeTable(
@@ -186,7 +230,8 @@ var _ = Describe("type Handler (websocket)", func() {
 				When("the envelope contains a 'send' frame", func() {
 					It("ignores frames with a call ID that is too low", func() {
 						err := conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+							// use client stream to prevent 'send' frame protocol timeout
+							`{ "call_id": 456, "call": "protean.test/TestService/ClientStream" }`,
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
@@ -205,7 +250,8 @@ var _ = Describe("type Handler (websocket)", func() {
 
 					It("closes the connection if the call ID is too high", func() {
 						err := conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+							// use client stream to prevent 'send' frame protocol timeout
+							`{ "call_id": 456, "call": "protean.test/TestService/ClientStream" }`,
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
@@ -240,7 +286,8 @@ var _ = Describe("type Handler (websocket)", func() {
 
 					It("ignores frames with a call ID in the past", func() {
 						err := conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+							// use client stream to prevent 'send' frame protocol timeout
+							`{ "call_id": 456, "call": "protean.test/TestService/ClientStream" }`,
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
@@ -259,7 +306,8 @@ var _ = Describe("type Handler (websocket)", func() {
 
 					It("closes the connection if the call ID is in the future", func() {
 						err := conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+							// use client stream to prevent 'send' frame protocol timeout
+							`{ "call_id": 456, "call": "protean.test/TestService/ClientStream" }`,
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
@@ -294,7 +342,8 @@ var _ = Describe("type Handler (websocket)", func() {
 
 					It("ignores frames with a call ID in the past", func() {
 						err := conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+							// use client stream to prevent 'send' frame protocol timeout
+							`{ "call_id": 456, "call": "protean.test/TestService/ClientStream" }`,
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
@@ -313,7 +362,8 @@ var _ = Describe("type Handler (websocket)", func() {
 
 					It("closes the connection if the call ID is in the future", func() {
 						err := conn.WriteMessage(websocket.TextMessage, []byte(
-							`{ "call_id": 456, "call": "protean.test/TestService/Unary" }`,
+							// use client stream to prevent 'send' frame protocol timeout
+							`{ "call_id": 456, "call": "protean.test/TestService/ClientStream" }`,
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
