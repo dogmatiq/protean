@@ -112,46 +112,54 @@ var _ = Describe("type Handler (websocket)", func() {
 			})
 
 			When("the client calls an invalid or unknown method", func() {
-				// TODO: these should be RPC errors, not connection closures.
 				DescribeTable(
-					"it closes the connection",
+					"it responds with an RPC error",
 					func(method, message string) {
 						err := conn.WriteMessage(websocket.TextMessage, []byte(
 							`{ "call_id": 456, "call": "`+method+`" }`,
 						))
 						Expect(err).ShouldNot(HaveOccurred())
 
-						expectWebSocketReadError(
-							conn,
-							MatchError(
-								`websocket: close 1002 (protocol error): invalid method in 'call' frame (456), `+message,
-							),
-						)
+						_, data, err := conn.ReadMessage()
+						Expect(err).ShouldNot(HaveOccurred())
+
+						env := &proteanpb.ServerEnvelope{}
+						err = protomime.JSONUnmarshaler.Unmarshal(data, env)
+						Expect(err).ShouldNot(HaveOccurred())
+
+						protoErr := env.GetError()
+						Expect(protoErr).NotTo(BeNil())
+
+						rpcErr, err := rpcerror.FromProto(protoErr)
+						Expect(err).ShouldNot(HaveOccurred())
+
+						Expect(rpcErr.Code()).To(Equal(rpcerror.NotImplemented))
+						Expect(rpcErr.Message()).To(Equal(message))
 					},
 					Entry(
 						"missing service & package",
 						"package",
-						"does not match '<package>/<service>/<method>' format",
+						"method name must be in '<package>/<service>/<method>' format",
 					),
 					Entry(
 						"missing method",
 						"package/Service",
-						"does not match '<package>/<service>/<method>' format",
+						"method name must be in '<package>/<service>/<method>' format",
 					),
 					Entry(
 						"extra segments",
 						"package/Service/Method/unknown",
-						"does not match '<package>/<service>/<method>' format",
+						"method name must be in '<package>/<service>/<method>' format",
 					),
 					Entry(
 						"unknown service",
 						"package/Service/Method",
-						"no such service",
+						"the server does not provide the 'package.Service' service",
 					),
 					Entry(
 						"unknown method",
 						"protean.test/TestService/Method",
-						"service has no such method",
+						"the 'protean.test.TestService' service does not contain an RPC method named 'Method'",
 					),
 				)
 			})
@@ -456,14 +464,15 @@ var _ = Describe("type Handler (websocket)", func() {
 				res, err := http.DefaultClient.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				expectWebSocketError(res, "websocket: the client is not using the websocket protocol: request method is not GET")
+				expectWebSocketUpgradeError(res, "websocket: the client is not using the websocket protocol: request method is not GET")
 			})
 		})
 	})
 })
 
-// expectWebSocketError asserts that the response describes the expected error.
-func expectWebSocketError(
+// expectWebSocketUpgradeError asserts that the response describes the expected
+// error.
+func expectWebSocketUpgradeError(
 	response *http.Response,
 	message string,
 ) {

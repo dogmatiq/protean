@@ -17,8 +17,8 @@ import (
 // It handles the marshaling and unmarshaling of websocket envelopes and manages
 // the RPC calls made by the client.
 type webSocket struct {
-	Services        map[string]runtime.Service
 	Conn            *websocket.Conn
+	Services        map[string]runtime.Service
 	Marshaler       protomime.Marshaler
 	Unmarshaler     protomime.Unmarshaler
 	ProtocolTimeout time.Duration
@@ -99,45 +99,16 @@ func (ws *webSocket) handleCall(
 		)
 	}
 
-	// Using parsePath() guarantees that the method name parsing behaves
-	// identically to the HTTP-request-based transports.
-	//
-	// TODO: these should be regular RPC errors, not protocol errors (connection
-	// should not be closed).
-	serviceName, methodName, ok := parsePath("/" + fr.Call)
-	if !ok {
-		return newWebSocketError(
-			websocket.CloseProtocolError,
-			"invalid method in 'call' frame (%d), does not match '<package>/<service>/<method>' format",
-			id,
-		)
-	}
-
-	service, ok := ws.Services[serviceName]
-	if !ok {
-		return newWebSocketError(
-			websocket.CloseProtocolError,
-			"invalid method in 'call' frame (%d), no such service",
-			id,
-		)
-	}
-
-	method, ok := service.MethodByName(methodName)
-	if !ok {
-		return newWebSocketError(
-			websocket.CloseProtocolError,
-			"invalid method in 'call' frame (%d), service has no such method",
-			id,
-		)
-	}
-
 	ws.minCallID = id + 1
 
 	ws.calls.Go(func() error {
 		c := &webSocketCall{
-			ID:              id,
-			Method:          method,
+			Conn:            ws.Conn,
+			Services:        ws.Services,
+			Marshaler:       ws.Marshaler,
 			ProtocolTimeout: ws.ProtocolTimeout,
+			ID:              id,
+			MethodName:      fr.Call,
 		}
 
 		return c.Serve(ctx)
