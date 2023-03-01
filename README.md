@@ -1,13 +1,16 @@
+<div align="center">
+
 # Protean
 
-[![Build Status](https://github.com/dogmatiq/protean/workflows/CI/badge.svg)](https://github.com/dogmatiq/protean/actions?workflow=CI)
-[![Code Coverage](https://img.shields.io/codecov/c/github/dogmatiq/protean/main.svg)](https://codecov.io/github/dogmatiq/protean)
-[![Latest Version](https://img.shields.io/github/tag/dogmatiq/protean.svg?label=semver)](https://semver.org)
-[![Documentation](https://img.shields.io/badge/go.dev-reference-007d9c)](https://pkg.go.dev/github.com/dogmatiq/protean)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dogmatiq/protean)](https://goreportcard.com/report/github.com/dogmatiq/protean)
+A Go framework for building browser-facing RPC services based on [Protocol
+Buffers service definitions], with full streaming support.
 
-Protean is a framework for building browser-facing RPC services based on
-[Protocol Buffers service definitions], with full streaming support.
+[![Documentation](https://img.shields.io/badge/go.dev-documentation-007d9c?&style=for-the-badge)](https://pkg.go.dev/github.com/dogmatiq/protean)
+[![Latest Version](https://img.shields.io/github/tag/dogmatiq/protean.svg?&style=for-the-badge&label=semver)](https://github.com/dogmatiq/protean/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/dogmatiq/protean/ci.yml?style=for-the-badge&branch=main)](https://github.com/dogmatiq/protean/actions/workflows/ci.yml)
+[![Code Coverage](https://img.shields.io/codecov/c/github/dogmatiq/protean/main.svg?style=for-the-badge)](https://codecov.io/github/dogmatiq/protean)
+
+</div>
 
 Protean is inspired by [Twirp](https://github.com/twitchtv/twirp) but has
 different goals. Specifically, it is intended to produce RPC services that are
