@@ -8,7 +8,7 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.4
-	google.golang.org/protobuf v1.29.0
+	google.golang.org/protobuf v1.29.1
 )
 
 require (
