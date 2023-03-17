@@ -1,6 +1,6 @@
 module github.com/dogmatiq/protean
 
-go 1.17
+go 1.19
 
 require (
 	github.com/dave/jennifer v1.6.0
