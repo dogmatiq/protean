@@ -7,7 +7,7 @@ require (
 	github.com/dogmatiq/iago v0.4.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.27.7
+	github.com/onsi/gomega v1.27.8
 	google.golang.org/protobuf v1.30.0
 )
 
