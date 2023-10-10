@@ -12,7 +12,7 @@ GO_TEST_REQ += internal/stringservice/service_protean.pb.go
 -include .makefiles/pkg/protobuf/v2/Makefile
 -include .makefiles/pkg/go/v1/Makefile
 
-%_protean.pb.go: %.proto $(PROTOC_COMMAND) artifacts/protobuf/bin/go.mod artifacts/protobuf/args/common artifacts/protobuf/args/go $(GO_DEBUG_DIR)/protoc-gen-go-protean
+%_protean.pb.go: %.proto $(PROTOC_COMMAND) artifacts/protobuf/args/common artifacts/protobuf/args/go $(GO_DEBUG_DIR)/protoc-gen-go-protean
 	PATH="$(GO_DEBUG_DIR):$(MF_PROJECT_ROOT)/artifacts/protobuf/bin:$$PATH" $(PROTOC_COMMAND) \
 		--proto_path="$(dir $(PROTOC_COMMAND))../include" \
 		--go-protean_opt=module=$$(go list -m) \
