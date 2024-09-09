@@ -4,7 +4,7 @@ go 1.21
 toolchain go1.22.5
 
 require (
-	github.com/dave/jennifer v1.7.0
+	github.com/dave/jennifer v1.7.1
 	github.com/dogmatiq/iago v0.4.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/onsi/ginkgo v1.16.5
